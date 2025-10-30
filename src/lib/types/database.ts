@@ -169,12 +169,15 @@ export interface Database {
           title: string
           description: string
           requirements: string[]
+          skills_required: string[]
           location: string
           salary_min: number
           salary_max: number
           job_type: 'full-time' | 'part-time' | 'internship'
-          status: 'active' | 'inactive' | 'closed'
+          is_active: boolean
+          is_approved: string
           application_deadline: string
+          posted_by: string
           created_at: string
           updated_at: string
         }
@@ -184,12 +187,15 @@ export interface Database {
           title: string
           description: string
           requirements: string[]
+          skills_required?: string[]
           location: string
           salary_min: number
           salary_max: number
           job_type: 'full-time' | 'part-time' | 'internship'
-          status?: 'active' | 'inactive' | 'closed'
+          is_active?: boolean
+          is_approved?: string
           application_deadline: string
+          posted_by?: string
           created_at?: string
           updated_at?: string
         }
@@ -199,12 +205,15 @@ export interface Database {
           title?: string
           description?: string
           requirements?: string[]
+          skills_required?: string[]
           location?: string
           salary_min?: number
           salary_max?: number
           job_type?: 'full-time' | 'part-time' | 'internship'
-          status?: 'active' | 'inactive' | 'closed'
+          is_active?: boolean
+          is_approved?: string
           application_deadline?: string
+          posted_by?: string
           created_at?: string
           updated_at?: string
         }

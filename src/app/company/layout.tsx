@@ -9,7 +9,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import DynamicHeader from "@/components/DynamicHeader"
 
-export default async function AdminLayout({
+export default async function CompanyLayout({
   children,
 }: {
   children: React.ReactNode
@@ -25,10 +25,10 @@ export default async function AdminLayout({
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (profile?.role !== 'company') {
     if (profile?.role === 'student') redirect('/student/dashboard')
     else if (profile?.role === 'faculty') redirect('/faculty/dashboard')
-    else if (profile?.role === 'company') redirect('/company/dashboard')
+    else if (profile?.role === 'admin') redirect('/admin')
     else redirect('/')
   }
 
@@ -39,26 +39,23 @@ export default async function AdminLayout({
       avatar: profile?.avatar_url || "/avatars/default.jpg",
     },
     company: {
-      name: "RCTI TPO",
-      plan: profile?.role || "Member",
-      url: "/admin",
+      name: "TechCorp Inc.",
+      plan: "Company Portal",
+      url: "/company",
     },
     navMain: [
       {
         title: "Dashboard",
-        url: "/admin",
-        icon: "SquareTerminal",
+        url: "/company",
+        icon: "LayoutDashboard",
         isActive: true,
-        items: [
-          { title: "Overview", url: "/admin" },
-          { title: "Company Approvals", url: "/admin/company-approvals" },
-          { title: "Faculty Approvals", url: "/admin/faculty-approvals" },
-        ],
       },
-      { title: "Analytics", url: "/admin/analytics", icon: "AlignEndHorizontal" },
-      { title: "Drives", url: "/admin/drives", icon: "Bot" },
-      { title: "Reports", url: "/admin/reports", icon: "PieChart" },
-      { title: "Settings", url: "/admin/settings", icon: "Settings2" },
+      { title: "Manage Drives", url: "/company/drives", icon: "Calendar" },
+      { title: "Applications", url: "/company/applications", icon: "Users" },
+      { title: "Interviews", url: "/company/interviews", icon: "FileText" },
+      { title: "Reports", url: "/company/reports", icon: "BarChart3" },
+      { title: "Profile", url: "/company/profile", icon: "Building2" },
+      { title: "Settings", url: "/company/settings", icon: "Settings" },
     ],
     navSecondary: [
       {

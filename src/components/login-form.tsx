@@ -55,13 +55,13 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
           redirectPath = '/admin'
           break
         case 'student':
-          redirectPath = '/student/dashboard'
+          redirectPath = '/student'
           break
         case 'faculty':
-          redirectPath = '/faculty/dashboard'
+          redirectPath = '/faculty'
           break
         case 'company':
-          redirectPath = '/company/dashboard'
+          redirectPath = '/company'
           break
       }
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/supabaseClient"
+import { useAuth } from "@/lib/supabase/useSupabaseAuth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -36,6 +37,7 @@ interface Drive {
 }
 
 export default function DriveManagement() {
+  const { user } = useAuth()
   const [drives, setDrives] = useState<Drive[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
   const [selectedDrives, setSelectedDrives] = useState<string[]>([])
@@ -45,7 +47,6 @@ export default function DriveManagement() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [skillInput, setSkillInput] = useState("")
   const [requirementInput, setRequirementInput] = useState("")
-  const [currentUser, setCurrentUser] = useState<{ id: string; full_name: string; email: string } | null>(null)
   const [newDrive, setNewDrive] = useState<Partial<Drive>>({
     title: "",
     description: "",
@@ -58,19 +59,6 @@ export default function DriveManagement() {
     application_deadline: "",
     company_id: "",
   })
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data: user, error } = await supabase.auth.getUser()
-      if (error) {
-        console.error("Failed to fetch user:", error)
-        return
-      }
-      if (user) setCurrentUser({ id: user.user.id, email: user.user.email || "", full_name: user.user.user_metadata.full_name || "" })
-    }
-
-    fetchUser()
-  }, [])
 
   useEffect(() => {
     fetchDrives()
@@ -195,7 +183,7 @@ export default function DriveManagement() {
   }
 
   const createDrive = async () => {
-    if (!newDrive.title?.trim() || !newDrive.description?.trim() || !newDrive.company_id || !currentUser?.id) {
+    if (!newDrive.title?.trim() || !newDrive.description?.trim() || !newDrive.company_id || !user?.id) {
       alert("Please fill all required fields.")
       return
     }
@@ -212,7 +200,7 @@ export default function DriveManagement() {
       location: newDrive.location || null,
       application_deadline: newDrive.application_deadline || null,
       is_active: true,
-      posted_by: currentUser.id,
+      posted_by: user.id,
       is_approved: "pending",
     }
 

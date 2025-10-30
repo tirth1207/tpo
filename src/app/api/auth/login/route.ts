@@ -88,9 +88,9 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('id', authData.user.id)
       .single()
-    console.log('Auth data:', authData)
-    console.log('User profile:', profile)
-    console.log('Profile error:', profileError)
+    // console.log('Auth data:', authData)
+    // console.log('User profile:', profile)
+    // console.log('Profile error:', profileError)
 
     if (profileError || !profile) {
       return NextResponse.json(
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user is approved (skip check for admin role)
-    if (profile.role !== 'admin' && !profile.is_approved) {
+    if (profile.role !== 'admin' && profile.approval_status !== 'approved') {
       return NextResponse.json(
         { 
           error: 'Account pending approval', 
