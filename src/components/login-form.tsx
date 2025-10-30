@@ -1,14 +1,11 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldSeparator,
-} from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
@@ -26,10 +23,10 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
     setError("")
 
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email, password }),
       })
@@ -37,36 +34,29 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
       const data = await response.json()
 
       if (!response.ok) {
-        if (data.requiresEmailVerification) {
-          setError(`${data.error}: ${data.details}`)
-        } else if (data.requiresApproval) {
-          setError(`${data.error}: ${data.details}`)
-        } else {
-          setError(data.error || 'Login failed')
-        }
+        setError(data.error || "Login failed")
         return
       }
 
       // Successful login - redirect based on role
       const { role } = data.user
-      let redirectPath = '/'
+      let redirectPath = "/"
       switch (role) {
-        case 'admin':
-          redirectPath = '/admin'
+        case "admin":
+          redirectPath = "/admin/dashboard"
           break
-        case 'student':
-          redirectPath = '/student'
+        case "student":
+          redirectPath = "/student/dashboard"
           break
-        case 'faculty':
-          redirectPath = '/faculty'
+        case "faculty":
+          redirectPath = "/faculty/dashboard"
           break
-        case 'company':
-          redirectPath = '/company'
+        case "company":
+          redirectPath = "/company/dashboard"
           break
       }
 
       router.push(redirectPath)
-
     } catch (err: any) {
       setError(err.message || "Unexpected error")
       console.error(err)

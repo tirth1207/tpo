@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { z } from 'zod'
+import { type NextRequest, NextResponse } from "next/server"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+import { z } from "zod"
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -21,11 +21,11 @@ export async function POST(request: NextRequest) {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll().map(cookie => ({
+            return cookieStore.getAll().map((cookie) => ({
               name: cookie.name,
               value: cookie.value,
               options: {
-                path: '/',
+                path: "/",
               },
             }))
           },
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
             })
           },
         },
-      }
+      },
     )
 
     // Sign in user
@@ -45,93 +45,45 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError) {
-      // Check if it's an email not confirmed error
-      if (authError.message.includes('email_not_confirmed')) {
-        return NextResponse.json(
-          { 
-            error: 'Email not verified', 
-            details: 'Please check your email and click the verification link before logging in.',
-            requiresEmailVerification: true 
-          },
-          { status: 401 }
-        )
-      }
-      
-      return NextResponse.json(
-        { error: authError.message },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: authError.message }, { status: 401 })
     }
 
     if (!authData.user) {
-      return NextResponse.json(
-        { error: 'Login failed' },
-        { status: 401 }
-      )
-    }
-
-    // Check if email is confirmed
-    if (!authData.user.email_confirmed_at) {
-      return NextResponse.json(
-        { 
-          error: 'Email not verified', 
-          details: 'Please check your email and click the verification link before logging in.',
-          requiresEmailVerification: true 
-        },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: "Login failed" }, { status: 401 })
     }
 
     // Get user profile
     const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', authData.user.id)
+      .from("profiles")
+      .select("*")
+      .eq("id", authData.user.id)
       .single()
-    // console.log('Auth data:', authData)
-    // console.log('User profile:', profile)
-    // console.log('Profile error:', profileError)
 
     if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
-    }
-
-    // Check if user is approved (skip check for admin role)
-    if (profile.role !== 'admin' && profile.approval_status !== 'approved') {
-      return NextResponse.json(
-        { 
-          error: 'Account pending approval', 
-          details: 'Please wait for admin/faculty approval before accessing the system.',
-          requiresApproval: true 
-        },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 })
     }
 
     // Get role-specific data
     let roleData = null
-    if (profile.role === 'student') {
+    if (profile.role === "student") {
       const { data: studentData } = await supabase
-        .from('students')
-        .select('*')
-        .eq('profile_id', authData.user.id)
+        .from("students")
+        .select("*")
+        .eq("profile_id", authData.user.id)
         .single()
       roleData = studentData
-    } else if (profile.role === 'faculty') {
+    } else if (profile.role === "faculty") {
       const { data: facultyData } = await supabase
-        .from('faculty')
-        .select('*')
-        .eq('profile_id', authData.user.id)
+        .from("faculty")
+        .select("*")
+        .eq("profile_id", authData.user.id)
         .single()
       roleData = facultyData
-    } else if (profile.role === 'company') {
+    } else if (profile.role === "company") {
       const { data: companyData } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('profile_id', authData.user.id)
+        .from("companies")
+        .select("*")
+        .eq("profile_id", authData.user.id)
         .single()
       roleData = companyData
     }
@@ -149,19 +101,12 @@ export async function POST(request: NextRequest) {
       },
       session: authData.session,
     })
-
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input data', details: error.issues },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid input data", details: error.issues }, { status: 400 })
     }
 
-    console.error('Login error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error("Login error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
