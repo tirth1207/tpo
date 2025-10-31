@@ -16,10 +16,8 @@ export async function createClient() {
           },
         }))
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options)
-        })
+      setAll() {
+        // No-op: Cookies cannot be set in server components
       },
     },
   })

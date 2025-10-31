@@ -54,8 +54,8 @@ export default async function CompanyLayout({
       { title: "Applications", url: "/company/applications", icon: "Users" },
       { title: "Interviews", url: "/company/interviews", icon: "FileText" },
       { title: "Reports", url: "/company/reports", icon: "BarChart3" },
-      { title: "Profile", url: "/company/profile", icon: "Building2" },
-      { title: "Settings", url: "/company/settings", icon: "Settings" },
+      // { title: "Profile", url: "/company/profile", icon: "Building2" },
+      // { title: "Settings", url: "/company/settings", icon: "Settings" },
     ],
     navSecondary: [
       {
