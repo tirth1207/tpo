@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -11,15 +11,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get student ID
-    const { data: student, error: studentError } = await supabase
+    // Get or create student profile
+    let { data: student, error: studentError } = await supabase
       .from('students')
       .select('id')
-      .eq('profile_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
-    if (studentError || !student) {
-      return NextResponse.json({ error: 'Student profile not found' }, { status: 404 })
+    if (studentError && studentError.code === 'PGRST116') {
+      // Student profile doesn't exist, create one
+      const { data: newStudent, error: insertError } = await supabase
+        .from('students')
+        .insert({
+          user_id: user.id,
+          roll_number: '',
+          department: '',
+          semester: null,
+          role: 'student',
+          email: user.email || null
+        })
+        .select('id')
+        .single()
+
+      if (insertError) {
+        console.error('Failed to create student profile:', insertError)
+        return NextResponse.json({ error: 'Failed to create student profile' }, { status: 500 })
+      }
+      student = newStudent
+    } else if (studentError) {
+      return NextResponse.json({ error: 'Failed to fetch student profile' }, { status: 400 })
     }
 
     // Get applications with job details
@@ -36,11 +56,9 @@ export async function GET(request: NextRequest) {
           salary_max,
           job_type,
           application_deadline,
-          status,
           companies!inner(
             company_name,
-            industry,
-            contact_person
+            industry
           )
         )
       `)
@@ -48,6 +66,7 @@ export async function GET(request: NextRequest) {
       .order('applied_at', { ascending: false })
 
     if (applicationsError) {
+      console.log(applicationsError)
       return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 400 })
     }
 
@@ -61,7 +80,7 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -80,7 +99,7 @@ export async function DELETE(request: NextRequest) {
     const { data: student, error: studentError } = await supabase
       .from('students')
       .select('id')
-      .eq('profile_id', user.id)
+      .eq('user_id', user.id)
       .single()
 
     if (studentError || !student) {
