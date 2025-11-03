@@ -1,3 +1,4 @@
+// src/app/api/students/offers/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
@@ -19,7 +20,6 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (studentError && studentError.code === 'PGRST116') {
-      // Student profile doesn't exist, create one
       const { data: newStudent, error: insertError } = await supabase
         .from('students')
         .insert({
@@ -42,7 +42,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch student profile' }, { status: 400 })
     }
 
-    // Get offer letters with job and company details
+    const today = new Date().toISOString().split('T')[0] // format YYYY-MM-DD
+
+    // Get offer letters where response_deadline has not passed
     const { data: offers, error: offersError } = await supabase
       .from('offer_letters')
       .select(`
@@ -57,6 +59,7 @@ export async function GET(request: NextRequest) {
         )
       `)
       .eq('student_id', student!.id)
+      .gte('response_deadline', today) // only fetch offers not expired
       .order('created_at', { ascending: false })
 
     if (offersError) {
@@ -64,7 +67,6 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ offers })
-
   } catch (error) {
     console.error('Get student offers error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

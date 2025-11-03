@@ -5,15 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Download, FileText, Calendar, Building2, AlertCircle } from "lucide-react"
+import { Download, FileText, Calendar, Building2, AlertCircle, SquareArrowOutUpRightIcon } from "lucide-react"
 
 interface Offer {
   id: string
   salary: string | null
   joining_date: string | null
-  offer_letter_url: string | null
-  status: string
+  offer_document_url: string | null
+  offer_status: string
   created_at: string
+  response_deadline: string 
   applications: {
     jobs: {
       title: string
@@ -65,7 +66,46 @@ export function OfferLetters() {
   const formatSalary = (salary: string | null) => {
     if (!salary) return "Not specified"
     return `₹${salary} LPA`
+  } 
+
+  const handleApprove = async (offerId: string) => {
+    try {
+      const res = await fetch(`/api/students/offers/${offerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offer_status: 'accepted' }),
+      })
+      if (!res.ok) throw new Error('Failed to accept offer')
+
+      setOffers((prev) =>
+        prev.map((offer) =>
+          offer.id === offerId ? { ...offer, offer_status: 'accepted' } : offer
+        )
+      )
+    } catch (err) {
+      console.error(err)
+    }
   }
+
+  const handleReject = async (offerId: string) => {
+    try {
+      const res = await fetch(`/api/students/offers/${offerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ offer_status: 'rejected' }),
+      })
+      if (!res.ok) throw new Error('Failed to reject offer')
+
+      setOffers((prev) =>
+        prev.map((offer) =>
+          offer.id === offerId ? { ...offer, offer_status: 'rejected' } : offer
+        )
+      )
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Not specified"
@@ -171,7 +211,7 @@ export function OfferLetters() {
                     </CardTitle>
                     <CardDescription>{offer.applications.jobs.title}</CardDescription>
                   </div>
-                  {getStatusBadge(offer.status)}
+                  {getStatusBadge(offer.offer_status)}
                 </div>
               </CardHeader>
               <CardContent>
@@ -197,18 +237,29 @@ export function OfferLetters() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-3">
-                  {offer.offer_letter_url && (
-                    <Button variant="outline" className="flex-1 bg-transparent">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download PDF
+                  {offer.offer_document_url && (
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      asChild // allow <a> to behave as the button
+                    >
+                      <a
+                        href={offer.offer_document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 w-full h-full"
+                      >
+                        <SquareArrowOutUpRightIcon className="h-4 w-4" />
+                        Redirect
+                      </a>
                     </Button>
                   )}
-                  {offer.status === "pending" && (
+                  {offer.offer_status === "pending" && (
                     <>
-                      <Button variant="default" className="flex-1">
+                      <Button variant="default" className="flex-1" onClick={() => handleApprove(offer.id)}>
                         Accept Offer
                       </Button>
-                      <Button variant="destructive" className="flex-1">
+                      <Button variant="destructive" className="flex-1" onClick={() => handleReject(offer.id)}>
                         Decline Offer
                       </Button>
                     </>

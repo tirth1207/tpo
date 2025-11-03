@@ -67,27 +67,22 @@ export function ApplicationsTable() {
   })
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case "applied":
         return <Badge variant="secondary">Applied</Badge>
-      case "under_review":
-        return <Badge variant="outline">Under Review</Badge>
       case "shortlisted":
         return <Badge variant="secondary">Shortlisted</Badge>
-      case "interview_scheduled":
+      case "interview scheduled":
         return <Badge variant="default">Interview Scheduled</Badge>
-      case "selected":
-        return <Badge variant="default">Selected</Badge>
+      case "offer extended":
+        return <Badge variant="default">Offer Extended</Badge>
       case "rejected":
         return <Badge variant="destructive">Rejected</Badge>
-      case "offer_accepted":
-        return <Badge variant="default">Offer Accepted</Badge>
-      case "offer_rejected":
-        return <Badge variant="destructive">Offer Rejected</Badge>
       default:
-        return <Badge variant="outline">{status.replace('_', ' ')}</Badge>
+        return <Badge variant="outline">{status}</Badge>
     }
   }
+
 
   const formatSalary = (min: number | null, max: number | null) => {
     if (!min && !max) return "Not specified"

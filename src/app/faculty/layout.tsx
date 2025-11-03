@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
 import { AppSidebar } from "@/components/app-sidebar"
 
-export default async function StudentLayout({
+export default async function FacultyLayout({
   children,
 }: {
   children: React.ReactNode
@@ -19,9 +19,9 @@ export default async function StudentLayout({
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'student') {
+  if (profile?.role !== 'faculty') {
     if (profile?.role === 'admin') redirect('/admin')
-    else if (profile?.role === 'faculty') redirect('/faculty')
+    else if (profile?.role === 'student') redirect('/student')
     else if (profile?.role === 'company') redirect('/company')
     else redirect('/')
   }
@@ -35,22 +35,23 @@ export default async function StudentLayout({
     company: {
       name: "RCTI TPO",
       plan: profile?.role || "Member",
-      url: "/student",
+      url: "/faculty",
     },
     navMain: [
       {
         title: "Dashboard",
-        url: "/student/dashboard",
+        url: "/faculty",
         icon: "SquareTerminal",
         isActive: true,
         items: [
-          { title: "Overview", url: "/student/dashboard" },
-          { title: "My Profile", url: "/student/profile" },
+          { title: "Overview", url: "/faculty" },
+          { title: "My Profile", url: "/faculty/profile" },
         ],
       },
-      { title: "Applications", url: "/student/applications", icon: "Briefcase" },
-      { title: "Offer Letters", url: "/student/offers", icon: "FileText" },
-      { title: "Jobs", url: "/student/jobs", icon: "Notebook" },
+      { title: "Student Profiles", url: "/faculty/students-list", icon: "Users" },
+      { title: "Student Applications", url: "/faculty/applications", icon: "Briefcase" },
+      { title: "Approval Requests", url: "/faculty/approvals", icon: "UserCheck" },
+      { title: "Export Data", url: "/faculty/export", icon: "Download" },
     ],
     navSecondary: [
       {
