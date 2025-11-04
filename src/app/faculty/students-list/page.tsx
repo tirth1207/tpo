@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -10,70 +10,67 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Filter, Eye, CheckCircle, XCircle, AlertCircle } from "lucide-react"
 
-const students = [
-  {
-    id: 1,
-    name: "Rahul Kumar",
-    rollNo: "CS2021001",
-    email: "rahul.kumar@college.edu",
-    cgpa: "8.5",
-    profileStatus: "Complete",
-    approvalStatus: "Approved",
-    lastUpdated: "2024-01-10",
-  },
-  {
-    id: 2,
-    name: "Priya Sharma",
-    rollNo: "CS2021002",
-    email: "priya.sharma@college.edu",
-    cgpa: "9.1",
-    profileStatus: "Pending Review",
-    approvalStatus: "Pending",
-    lastUpdated: "2024-01-12",
-  },
-  {
-    id: 3,
-    name: "Amit Singh",
-    rollNo: "CS2021003",
-    email: "amit.singh@college.edu",
-    cgpa: "7.8",
-    profileStatus: "Incomplete",
-    approvalStatus: "Needs Correction",
-    lastUpdated: "2024-01-08",
-  },
-  {
-    id: 4,
-    name: "Sneha Patel",
-    rollNo: "CS2021004",
-    email: "sneha.patel@college.edu",
-    cgpa: "8.9",
-    profileStatus: "Complete",
-    approvalStatus: "Approved",
-    lastUpdated: "2024-01-11",
-  },
-  {
-    id: 5,
-    name: "Vikram Reddy",
-    rollNo: "CS2021005",
-    email: "vikram.reddy@college.edu",
-    cgpa: "8.2",
-    profileStatus: "Pending Review",
-    approvalStatus: "Pending",
-    lastUpdated: "2024-01-13",
-  },
-]
+interface Student {
+  id: string
+  first_name?: string
+  last_name?: string
+  email?: string
+  roll_number?: string
+  cgpa?: string
+  profile_status?: string
+  approval_status?: string
+  last_updated?: string
+}
 
 export default function StudentProfilesTable() {
-  const [selectedStudents, setSelectedStudents] = useState<number[]>([])
+  const [students, setStudents] = useState<Student[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+
+  const fetchStudents = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/faculty/student")
+      const data = await res.json()
+      if (data.students) {
+        const mappedStudents = data.students.map((s: any) => {
+          const profileStatus = s.is_approved ? "Complete" : "Incomplete"
+          const status = s.status || (s.is_approved ? "Approved" : "Pending")
+
+          return {
+            id: s.id,
+            name: `${s.first_name || ""} ${s.last_name || ""}`.trim(),
+            email: s.email,
+            rollNo: s.roll_number,
+            cgpa: s.cgpa?.toString() || "-",
+            profileStatus,
+            status,
+            lastUpdated: s.updated_at ? new Date(s.updated_at).toLocaleDateString() : "-"
+          }
+        })
+        setStudents(mappedStudents)
+      }
+    } catch (err) {
+      console.error("Failed to fetch students:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchStudents()
+  }, [])
+
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.rollNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || student.approvalStatus.toLowerCase() === statusFilter.toLowerCase()
+      student.rollNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus =
+      statusFilter === "all" || student?.approval_status?.toLowerCase() === statusFilter.toLowerCase()
     return matchesSearch && matchesStatus
   })
 
@@ -85,7 +82,7 @@ export default function StudentProfilesTable() {
     }
   }
 
-  const handleSelectStudent = (id: number, checked: boolean) => {
+  const handleSelectStudent = (id: string, checked: boolean) => {
     if (checked) {
       setSelectedStudents([...selectedStudents, id])
     } else {
@@ -96,23 +93,18 @@ export default function StudentProfilesTable() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Approved":
-        return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-            Approved
-          </Badge>
-        )
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Approved</Badge>
       case "Pending":
-        return (
-          <Badge variant="outline" className="border-orange-200 text-orange-800">
-            Pending
-          </Badge>
-        )
+        return <Badge className="border-orange-200 text-orange-800" variant="outline">Pending</Badge>
+      case "Rejected":
+        return <Badge variant="destructive">Rejected</Badge>
       case "Needs Correction":
         return <Badge variant="destructive">Needs Correction</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
   }
+
 
   const getProfileStatusIcon = (status: string) => {
     switch (status) {
@@ -127,6 +119,36 @@ export default function StudentProfilesTable() {
     }
   }
 
+  const [updatingIds, setUpdatingIds] = useState<{ [id: string]: "approve" | "reject" | null }>({})
+
+  const handleApproveReject = async (id: string, action: "approve" | "reject") => {
+    try {
+      // Mark this student as updating
+      setUpdatingIds((prev) => ({ ...prev, [id]: action }))
+
+      const res = await fetch(`/api/faculty/approvals/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: action === "approve" ? "Approved" : "Rejected" })
+      })
+
+      if (!res.ok) throw new Error("Failed to update status")
+
+      // Re-fetch students after update
+      await fetchStudents()
+    } catch (err) {
+      console.error(err)
+      alert("Something went wrong while updating status")
+    } finally {
+      // Clear updating state
+      setUpdatingIds((prev) => ({ ...prev, [id]: null }))
+    }
+  }
+
+
+
+  if (loading) return <p>Loading students...</p>
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -139,7 +161,7 @@ export default function StudentProfilesTable() {
       <Card>
         <CardHeader>
           <CardTitle>Department Students</CardTitle>
-          <CardDescription>View and manage all student profiles in Computer Science Department</CardDescription>
+          <CardDescription>View and manage all student profiles in your department</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Filters and Search */}
@@ -208,7 +230,9 @@ export default function StudentProfilesTable() {
                     <TableCell>
                       <Checkbox
                         checked={selectedStudents.includes(student.id)}
-                        onCheckedChange={(checked) => handleSelectStudent(student.id, checked as boolean)}
+                        onCheckedChange={(checked) =>
+                          handleSelectStudent(student.id, checked as boolean)
+                        }
                       />
                     </TableCell>
                     <TableCell>
@@ -223,25 +247,40 @@ export default function StudentProfilesTable() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {getProfileStatusIcon(student.profileStatus)}
+                        {getProfileStatusIcon(student.profileStatus || "")}
                         <span className="text-sm">{student.profileStatus}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{getStatusBadge(student.approvalStatus)}</TableCell>
+                    <TableCell>{getStatusBadge(student.status || "")}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{student.lastUpdated}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button size="sm" variant="outline">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.location.href = `/faculty/approvals/${student.id}`}
+                        >
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
-                        {student.approvalStatus === "Pending" && (
+
+                        {student.status === "Pending" && (
                           <>
-                            <Button size="sm" variant="default">
-                              Approve
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleApproveReject(student.id, "approve")}
+                              disabled={!!updatingIds[student.id]}
+                            >
+                              {updatingIds[student.id] === "approve" ? "Approving..." : "Approve"}
                             </Button>
-                            <Button size="sm" variant="outline">
-                              Reject
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleApproveReject(student.id, "reject")}
+                              disabled={!!updatingIds[student.id]}
+                            >
+                              {updatingIds[student.id] === "reject" ? "Rejecting..." : "Reject"}
                             </Button>
                           </>
                         )}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,72 +9,61 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Search, Filter, Eye, Building2, User } from "lucide-react"
 
-const studentApplications = [
-  {
-    id: 1,
-    student: "Rahul Kumar",
-    rollNo: "CS2021001",
-    company: "TechCorp Inc.",
-    role: "Software Engineer",
-    package: "₹12 LPA",
-    appliedDate: "2024-01-10",
-    status: "Under Review",
-    interviewDate: null,
-  },
-  {
-    id: 2,
-    student: "Priya Sharma",
-    rollNo: "CS2021002",
-    company: "DataSys Solutions",
-    role: "Data Analyst",
-    package: "₹8 LPA",
-    appliedDate: "2024-01-08",
-    status: "Interview Scheduled",
-    interviewDate: "2024-01-15",
-  },
-  {
-    id: 3,
-    student: "Amit Singh",
-    rollNo: "CS2021003",
-    company: "WebFlow Technologies",
-    role: "Frontend Developer",
-    package: "₹10 LPA",
-    appliedDate: "2024-01-05",
-    status: "Selected",
-    interviewDate: "2024-01-12",
-  },
-  {
-    id: 4,
-    student: "Sneha Patel",
-    rollNo: "CS2021004",
-    company: "CloudTech Systems",
-    role: "DevOps Engineer",
-    package: "₹15 LPA",
-    appliedDate: "2024-01-12",
-    status: "Applied",
-    interviewDate: null,
-  },
-  {
-    id: 5,
-    student: "Vikram Reddy",
-    rollNo: "CS2021005",
-    company: "AI Innovations",
-    role: "ML Engineer",
-    package: "₹18 LPA",
-    appliedDate: "2024-01-11",
-    status: "Interview Scheduled",
-    interviewDate: "2024-01-16",
-  },
-]
+interface Application {
+  id: string
+  student_name: string
+  rollNo: string
+  company: string
+  role: string
+  package: string
+  appliedDate: string
+  status: string
+  interviewDate: string | null
+}
 
 export default function StudentApplications() {
+  const [applications, setApplications] = useState<Application[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [companyFilter, setCompanyFilter] = useState("all")
 
-  const filteredApplications = studentApplications.filter((app) => {
+  // Fetch applications from API
+  const fetchApplications = async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/faculty/applications")
+      const data = await res.json()
+      if (res.ok) {
+        const mapped: Application[] = data.applications.map((app: any) => ({
+          id: app.id,
+          student_name: `${app.students.first_name || ""} ${app.students.last_name || ""}`,
+          rollNo: app.students.roll_number,
+          company: app.jobs.companies.company_name,
+          role: app.jobs.title,
+          package: "N/A", // replace with actual package if exists
+          appliedDate: new Date(app.applied_at).toLocaleDateString(),
+          interviewDate: app.interview_date ? new Date(app.interview_date).toLocaleDateString() : null,
+          status: app.status,
+        }))
+        setApplications(mapped)
+      } else {
+        console.error("Error fetching applications:", data.error)
+      }
+    } catch (err) {
+      console.error("Failed to fetch applications:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchApplications()
+  }, [])
+
+  const filteredApplications = applications.filter((app) => {
     const matchesSearch =
-      app.student.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      app.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.rollNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
       app.role.toLowerCase().includes(searchTerm.toLowerCase())
@@ -84,25 +73,23 @@ export default function StudentApplications() {
   })
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Selected":
-        return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200">
-            Selected
-          </Badge>
-        )
-      case "Interview Scheduled":
+    switch (status.toLowerCase()) {
+      case "selected":
+        return <Badge className="bg-green-100 text-green-800 border-green-200">Selected</Badge>
+      case "interview scheduled":
         return <Badge variant="default">Interview Scheduled</Badge>
-      case "Under Review":
+      case "under review":
         return <Badge variant="outline">Under Review</Badge>
-      case "Applied":
+      case "applied":
         return <Badge variant="secondary">Applied</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
   }
 
-  const companies = [...new Set(studentApplications.map((app) => app.company))]
+  const companies = [...new Set(applications.map((app) => app.company))]
+
+  if (loading) return <p>Loading applications...</p>
 
   return (
     <div className="space-y-6">
@@ -111,52 +98,6 @@ export default function StudentApplications() {
           <h1 className="text-3xl font-bold text-foreground">Student Applications</h1>
           <p className="text-muted-foreground mt-1">Track job applications from your department students</p>
         </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Total Applications</p>
-                <p className="text-2xl font-bold">{studentApplications.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Companies</p>
-                <p className="text-2xl font-bold">{companies.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm font-medium">Interviews</p>
-              <p className="text-2xl font-bold">
-                {studentApplications.filter((app) => app.status === "Interview Scheduled").length}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div>
-              <p className="text-sm font-medium">Selected</p>
-              <p className="text-2xl font-bold text-green-600">
-                {studentApplications.filter((app) => app.status === "Selected").length}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
@@ -212,7 +153,6 @@ export default function StudentApplications() {
                   <TableHead>Student</TableHead>
                   <TableHead>Company</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead>Package</TableHead>
                   <TableHead>Applied Date</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Interview Date</TableHead>
@@ -222,17 +162,9 @@ export default function StudentApplications() {
               <TableBody>
                 {filteredApplications.map((app) => (
                   <TableRow key={app.id}>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-medium">{app.student}</p>
-                        <p className="text-sm text-muted-foreground">{app.rollNo}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{app.company}</TableCell>
+                    <TableCell>{app.student_name}</TableCell>
+                    <TableCell>{app.company}</TableCell>
                     <TableCell>{app.role}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{app.package}</Badge>
-                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{app.appliedDate}</TableCell>
                     <TableCell>{getStatusBadge(app.status)}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">

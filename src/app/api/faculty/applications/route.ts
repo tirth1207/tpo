@@ -1,164 +1,75 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { z } from 'zod'
-
-const updateApplicationSchema = z.object({
-  applicationId: z.string().uuid(),
-  status: z.enum(['under_review', 'shortlisted', 'rejected', 'selected']),
-  notes: z.string().optional(),
-})
+// import { supabase } from "@/lib/supabase/supabaseClient"
+import { createClient } from "@/lib/supabase/server"
+import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
-    
-    // Get current user
+    const supabase = await createClient()
+    // 1️⃣ Get logged-in user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is faculty or admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
+    // 2️⃣ Get faculty linked to user
+    const { data: faculty, error: facultyError } = await supabase
+      .from('faculty')
+      .select('id')
+      .eq('user_id', user.id)
       .single()
 
-    if (profileError || !profile || !['faculty', 'admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (facultyError || !faculty) {
+      return NextResponse.json({ error: 'Faculty not found' }, { status: 404 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status')
-    const studentId = searchParams.get('student_id')
-    const jobId = searchParams.get('job_id')
+    // 3️⃣ Get all student ranges for this faculty
+    const { data: ranges, error: rangeError } = await supabase
+      .from('faculty_student_ranges')
+      .select('start_roll_number, end_roll_number')
+      .eq('faculty_id', faculty.id)
 
-    // Build query
-    let query = supabase
+    if (rangeError) throw rangeError
+    if (!ranges || ranges.length === 0) {
+      return NextResponse.json({ students: [], applications: [] })
+    }
+
+    // 4️⃣ Fetch students in any of the ranges
+    let students: any[] = []
+    for (const range of ranges) {
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select('*')
+        .gte('roll_number', range.start_roll_number.toString())
+        .lte('roll_number', range.end_roll_number.toString())
+
+      if (studentError) throw studentError
+      if (studentData) students = students.concat(studentData)
+    }
+
+    if (students.length === 0) {
+      return NextResponse.json({ students: [], applications: [] })
+    }
+
+    // 5️⃣ Fetch applications for these students
+    const { data: applications, error: appError } = await supabase
       .from('applications')
       .select(`
-        *,
-        students!inner(
-          id,
-          roll_number,
-          branch,
-          year,
-          cgpa,
-          profiles!inner(
-            id,
-            email,
-            first_name,
-            last_name
-          )
-        ),
-        jobs!inner(
-          id,
-          title,
-          location,
-          companies!inner(
-            company_name,
-            industry
-          )
-        )
+        id,
+        status,
+        applied_at,
+        interview_date,
+        student_id,
+        students!inner(first_name, last_name, roll_number),
+        jobs!inner(title, company_id, companies!inner(company_name))
       `)
-
-    if (status) {
-      query = query.eq('status', status)
-    }
-
-    if (studentId) {
-      query = query.eq('student_id', studentId)
-    }
-
-    if (jobId) {
-      query = query.eq('job_id', jobId)
-    }
-
-    const { data: applications, error: applicationsError } = await query
+      .in('student_id', students.map((s) => s.id))
       .order('applied_at', { ascending: false })
 
-    if (applicationsError) {
-      return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 400 })
-    }
+    if (appError) throw appError
 
-    return NextResponse.json({ applications })
-
-  } catch (error) {
-    console.error('Get applications error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function PUT(request: NextRequest) {
-  try {
-    const supabase = createClient()
-    
-    // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check if user is faculty or admin
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError || !profile || !['faculty', 'admin'].includes(profile.role)) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
-
-    const body = await request.json()
-    const { applicationId, status, notes } = updateApplicationSchema.parse(body)
-
-    // Update application
-    const { error: updateError } = await supabase
-      .from('applications')
-      .update({
-        status,
-        notes,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: user.id
-      })
-      .eq('id', applicationId)
-
-    if (updateError) {
-      return NextResponse.json({ error: 'Failed to update application' }, { status: 400 })
-    }
-
-    // Get application details for notification
-    const { data: application, error: appError } = await supabase
-      .from('applications')
-      .select(`
-        student_id,
-        jobs!inner(title, companies!inner(company_name))
-      `)
-      .eq('id', applicationId)
-      .single()
-
-    if (!appError && application) {
-      // Create notification for student
-      await supabase
-        .from('notifications')
-        .insert({
-          user_id: application.student_id,
-          title: 'Application Status Updated',
-          message: `Your application for ${application.jobs.companies.company_name} - ${application.jobs.title} has been ${status.replace('_', ' ')}.`,
-          type: status === 'selected' ? 'success' : status === 'rejected' ? 'error' : 'info',
-        })
-    }
-
-    return NextResponse.json({ message: 'Application updated successfully' })
-
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 })
-    }
-
-    console.error('Update application error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json({ students, applications })
+  } catch (err) {
+    console.error("API fetch error:", err)
+    return NextResponse.json({ error: "Failed to fetch students or applications" }, { status: 500 })
   }
 }
