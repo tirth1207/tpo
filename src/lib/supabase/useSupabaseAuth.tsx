@@ -56,20 +56,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }
 
   useEffect(() => {
-    // Initial load
-    refreshUser()
-
-    // Subscribe to auth state changes
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        setUser(null)
-      } else {
-        refreshUser()
-      }
+    setLoading(true)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
     })
 
     return () => {
-      listener?.subscription?.unsubscribe()
+      subscription.unsubscribe()
     }
   }, [])
 

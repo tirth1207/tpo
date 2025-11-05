@@ -1,0 +1,218 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "Next.js 16",
+    "React 19",
+    "Tailwind CSS 4",
+    "Supabase (Auth + Postgres)",
+    "Radix UI",
+    "ESLint 9",
+    "PostCSS",
+    "Node.js"
+  ],
+  "features": [
+    {
+      "name": "App Shell & Routing",
+      "description": "Next.js app router with role-based sections for admin, faculty, company, student. Global layout, styles, and middleware.",
+      "files": [
+        "src/app/layout.tsx",
+        "src/app/globals.css",
+        "middleware.ts",
+        "src/app/page.tsx",
+        "src/app/auth/layout.tsx",
+        "src/app/admin/layout.tsx",
+        "src/app/company/layout.tsx",
+        "src/app/faculty/layout.tsx",
+        "src/app/student/layout.tsx"
+      ]
+    },
+    {
+      "name": "Authentication Pages",
+      "description": "Public auth flows: login, signup, and signup success pages using Supabase auth helpers.",
+      "files": [
+        "src/app/auth/login/page.tsx",
+        "src/app/auth/signup/page.tsx",
+        "src/app/auth/signup-success/page.tsx",
+        "src/components/login-form.tsx",
+        "src/components/signup-form.tsx",
+        "src/lib/supabase/useSupabaseAuth.tsx"
+      ]
+    },
+    {
+      "name": "Supabase Client & Types",
+      "description": "Client/server Supabase initialization and generated database types for typed queries.",
+      "files": [
+        "src/lib/supabase/supabaseClient.ts",
+        "src/lib/supabase/server.ts",
+        "src/lib/supabase/types.ts",
+        "src/lib/types/database.ts"
+      ]
+    },
+    {
+      "name": "Admin Portal",
+      "description": "Admin dashboards, approvals, reports, settings, and analytics pages.",
+      "files": [
+        "src/app/admin/page.tsx",
+        "src/app/admin/analytics/page.tsx",
+        "src/app/admin/company-approvals/page.tsx",
+        "src/app/admin/faculty-approvals/page.tsx",
+        "src/app/admin/faculty-table/page.tsx",
+        "src/app/admin/reports/page.tsx",
+        "src/app/admin/settings/page.tsx",
+        "src/app/admin/student/page.tsx"
+      ]
+    },
+    {
+      "name": "Faculty Portal",
+      "description": "Faculty pages for approvals, applications, exports, and student lists.",
+      "files": [
+        "src/app/faculty/page.tsx",
+        "src/app/faculty/approvals/page.tsx",
+        "src/app/faculty/approvals/[studentID]/page.tsx",
+        "src/app/faculty/applications/page.tsx",
+        "src/app/faculty/export/page.tsx",
+        "src/app/faculty/students-list/page.tsx"
+      ]
+    },
+    {
+      "name": "Company Portal",
+      "description": "Company dashboard pages for applications, drives, interviews, profile, reports, settings.",
+      "files": [
+        "src/app/company/page.tsx",
+        "src/app/company/applications/page.tsx",
+        "src/app/company/drives/page.tsx",
+        "src/app/company/interviews/page.tsx",
+        "src/app/company/profile/page.tsx",
+        "src/app/company/reports/page.tsx",
+        "src/app/company/settings/page.tsx"
+      ]
+    },
+    {
+      "name": "Student Portal",
+      "description": "Student dashboard, jobs, applications, offers, profile, and completion flow.",
+      "files": [
+        "src/app/student/page.tsx",
+        "src/app/student/jobs/page.tsx",
+        "src/app/student/applications/page.tsx",
+        "src/app/student/applications/[id]/page.tsx",
+        "src/app/student/offers/page.tsx",
+        "src/app/student/profile/page.tsx",
+        "src/app/student/profile-completion/page.tsx",
+        "src/app/student/StudentSidebarLayout.tsx"
+      ]
+    },
+    {
+      "name": "API Routes - Auth",
+      "description": "Next.js route handlers for login, logout, register, password reset, and verification.",
+      "files": [
+        "src/app/api/auth/login/route.ts",
+        "src/app/api/auth/logout/route.ts",
+        "src/app/api/auth/register/route.ts",
+        "src/app/api/auth/reset-password/route.ts",
+        "src/app/api/auth/verify/route.ts"
+      ]
+    },
+    {
+      "name": "API Routes - Users & System",
+      "description": "Core user endpoints and system/setup utilities.",
+      "files": [
+        "src/app/api/users/route.ts",
+        "src/app/api/admin/setup/route.ts",
+        "src/app/api/admin/system/route.ts"
+      ]
+    },
+    {
+      "name": "API Routes - Students",
+      "description": "Student endpoints for applications, profiles, dashboard, jobs, and offers.",
+      "files": [
+        "src/app/api/students/route.ts",
+        "src/app/api/students/applications/route.ts",
+        "src/app/api/students/applications/[id]/route.ts",
+        "src/app/api/students/apply/route.ts",
+        "src/app/api/students/dashboard/route.ts",
+        "src/app/api/students/jobs/route.ts",
+        "src/app/api/students/my-profile/route.ts",
+        "src/app/api/students/offers/route.ts",
+        "src/app/api/students/offers/[id]/route.ts",
+        "src/app/api/students/profile/route.ts"
+      ]
+    },
+    {
+      "name": "API Routes - Faculty",
+      "description": "Faculty endpoints for approvals, applications, dashboards, exports, and student details.",
+      "files": [
+        "src/app/api/faculty/approvals/route.ts",
+        "src/app/api/faculty/approvals/[id]/route.ts",
+        "src/app/api/faculty/applications/route.ts",
+        "src/app/api/faculty/dashboard/route.ts",
+        "src/app/api/faculty/export/route.ts",
+        "src/app/api/faculty/student/route.ts",
+        "src/app/api/faculty/student/[studentID]/route.ts"
+      ]
+    },
+    {
+      "name": "API Routes - Companies",
+      "description": "Company endpoints: dashboard, profile, jobs, applications and helper fetch.",
+      "files": [
+        "src/app/api/companies/dashboard/route.ts",
+        "src/app/api/companies/profile/route.ts",
+        "src/app/api/companies/jobs/route.ts",
+        "src/app/api/companies/applications/route.ts",
+        "src/app/api/companies/fetchDashboardData.ts"
+      ]
+    },
+    {
+      "name": "API Routes - Admin Actions",
+      "description": "Admin approvals and data tables.",
+      "files": [
+        "src/app/api/admin/approvals/route.ts",
+        "src/app/api/admin/approve-company/route.ts",
+        "src/app/api/admin/approve-faculty/route.ts",
+        "src/app/api/admin/approve-student/route.ts",
+        "src/app/api/admin/faculty-table/route.ts",
+        "src/app/api/admin/notifications/route.ts",
+        "src/app/api/admin/users/route.ts"
+      ]
+    },
+    {
+      "name": "Misc API Routes",
+      "description": "Jobs listing, analytics, notifications, upload.",
+      "files": [
+        "src/app/api/jobs/route.ts",
+        "src/app/api/jobs/[id]/route.ts",
+        "src/app/api/analytics/route.ts",
+        "src/app/api/notifications/route.ts",
+        "src/app/api/upload/route.ts"
+      ]
+    },
+    {
+      "name": "Shared UI Components",
+      "description": "Reusable UI primitives and composed widgets for dashboards and sidebars.",
+      "files": [
+        "src/components/ui/button.tsx",
+        "src/components/ui/input.tsx",
+        "src/components/ui/table.tsx",
+        "src/components/ui/select.tsx",
+        "src/components/ui/dialog.tsx",
+        "src/components/ui/tooltip.tsx",
+        "src/components/student/student-dashboard.tsx",
+        "src/components/company-dashboard/StatsCards.tsx",
+        "src/components/company-dashboard/RecentDrives.tsx",
+        "src/components/company-dashboard/RecentApplications.tsx",
+        "src/components/app-sidebar.tsx",
+        "src/components/theme-provider.tsx",
+        "src/components/theme-toggle.tsx"
+      ]
+    },
+    {
+      "name": "Hooks & Utilities",
+      "description": "Custom hooks and shared utilities.",
+      "files": [
+        "src/hooks/use-mobile.ts",
+        "src/lib/utils.ts"
+      ]
+    }
+  ]
+}
+
+

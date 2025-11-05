@@ -59,7 +59,6 @@ export default function ApplicationsReview() {
         )
       `)
       .order("applied_at", { ascending: false })
-    console.log("Fetched applications:", data, error)
     if (error) {
       console.error("Error fetching applications:", error)
       return
@@ -74,6 +73,7 @@ export default function ApplicationsReview() {
       student_name: app.students?.profiles?.full_name || app.students?.roll_number || "Unknown",
       student_email: app.students?.profiles?.email || "N/A",
       student_cgpa: app.students?.cgpa,
+      student_roll: app.students?.roll_number,
       student_department: app.students?.department,
       student_is_approved: app.students?.is_approved ?? true, // <- Add this
       job_is_approved: app.jobs?.is_approved ?? "approved",  // optional if you want job approval badges
@@ -83,6 +83,7 @@ export default function ApplicationsReview() {
 
     setApplications(formatted)
   }
+  console.log(applications)
 
   // Update single or multiple application statuses
   const updateStatus = async (ids: string[], newStatus: string) => {
@@ -226,8 +227,8 @@ export default function ApplicationsReview() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Applications Review</h2>
-        <p className="text-gray-600">Review and manage student applications</p>
+        <h2 className="text-2xl font-bold text-foreground">Applications Review</h2>
+        <p className="text-foreground">Review and manage student applications</p>
       </div>
 
       {/* Filters */}
@@ -349,9 +350,9 @@ export default function ApplicationsReview() {
                     <TableCell>
                       <div>
                         <div className="font-semibold">{app.student_name}</div>
-                        <div className="text-sm text-gray-600">{app.student_email}</div>
+                        <div className="text-sm text-foreground">{app.student_email}</div>
                         <div className="text-sm text-gray-500">
-                          Roll No: {app.students?.roll_number || "-"}
+                          Roll No: {app.student_roll }
                         </div>
                         {app.student_is_approved === false && (
                           <div className="text-yellow-600 text-xs mt-1">
@@ -383,7 +384,7 @@ export default function ApplicationsReview() {
                     <TableCell>{app.student_cgpa ?? "-"}</TableCell>
 
                     {/* Applied At */}
-                    <TableCell className="text-sm text-gray-600">
+                    <TableCell className="text-sm text-foreground">
                       {new Date(app.applied_at).toLocaleDateString()}
                     </TableCell>
 

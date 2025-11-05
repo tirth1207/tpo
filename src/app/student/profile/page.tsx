@@ -91,7 +91,7 @@ export default function StudentProfilePage() {
           {skills.length > 0 ? (
             <ul className="flex flex-wrap gap-2 mt-1">
               {skills.map((skill, idx) => (
-                <li key={idx} className="bg-gray-200 px-2 py-1 rounded">
+                <li key={idx} className="bg-muted text-foreground border border-primary px-2 py-1 rounded">
                   {skill}
                 </li>
               ))}
@@ -119,7 +119,7 @@ export default function StudentProfilePage() {
 
       {/* Faculty Info Section */}
       {faculty && (
-        <div className="mt-10 p-4 border rounded-lg bg-gray-50">
+        <div className="mt-10 p-4 border rounded-lg bg-muted border border-muted-900">
           <h2 className="text-2xl font-bold mb-4">Assigned Faculty</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

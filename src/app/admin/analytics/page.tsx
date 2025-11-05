@@ -5,6 +5,16 @@ import { supabase } from "@/lib/supabase/supabaseClient" // your supabase client
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, Users, Building2, Award, Download, Calendar } from "lucide-react"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 interface AnalyticsRow {
   id: string
@@ -58,7 +68,7 @@ export default function AdminAnalytics() {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Visits</CardTitle>
@@ -88,7 +98,7 @@ export default function AdminAnalytics() {
             <div className="text-2xl font-bold">₹{totalRevenue}</div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
 
       {/* Trends Table */}
       <Card>
@@ -98,24 +108,65 @@ export default function AdminAnalytics() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full table-auto border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border px-4 py-2">Date</th>
-                  <th className="border px-4 py-2">Metric Type</th>
-                  <th className="border px-4 py-2">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.map(a => (
-                  <tr key={a.id}>
-                    <td className="border px-4 py-2">{a.date}</td>
-                    <td className="border px-4 py-2">{a.metric_type}</td>
-                    <td className="border px-4 py-2">{a.metric_value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <Table className="min-w-full divide-y divide-muted bg-card rounded-lg overflow-hidden shadow">
+            <TableHeader>
+              <TableRow className="bg-muted">
+                <TableHead className="px-4 py-3 text-left font-semibold text-foreground">Date</TableHead>
+                <TableHead className="px-4 py-3 text-left font-semibold text-foreground">Metric Type</TableHead>
+                <TableHead className="px-4 py-3 text-left font-semibold text-foreground">Metric Value</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {analytics.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="px-4 py-5 text-center text-muted-foreground">
+                    No analytics data available.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                analytics.map((a) => (
+                  <TableRow key={a.id} className="hover:bg-muted/70">
+                    <TableCell className="px-4 py-3">{a.date}</TableCell>
+                    <TableCell className="px-4 py-3">{a.metric_type}</TableCell>
+                    <TableCell className="px-4 py-3">{a.metric_value}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          {/* Summary Cards Below Table - match top stats card style */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mt-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Visits</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalVisits}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Signups</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{totalSignups}</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <Award className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">₹{totalRevenue}</div>
+              </CardContent>
+            </Card>
+          </div>
           </div>
         </CardContent>
       </Card>

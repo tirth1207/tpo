@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase/supabaseClient"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+// Tabs removed as only one section is displayed
 import { Badge } from "@/components/ui/badge"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -27,7 +27,7 @@ interface InterviewRow {
 export default function InterviewReports() {
   const [interviews, setInterviews] = useState<InterviewRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("reports")
+  
   const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   useEffect(() => {
@@ -54,26 +54,31 @@ export default function InterviewReports() {
         ? await supabase.from("applications").select("id, student_id, job_id").in("id", applicationIds)
         : { data: [] }
 
-      const studentIds = applicationsData.map((a) => a.student_id).filter(Boolean)
+      const studentIds = (applicationsData ?? []).map((a) => a.student_id).filter(Boolean)
       const { data: studentsData = [] } = studentIds.length
         ? await supabase.from("students").select("id, roll_number, user_id").in("id", studentIds)
         : { data: [] }
 
-      const userIds = studentsData.map((s) => s.user_id).filter(Boolean)
+      const userIds = (studentsData ?? []).map((s) => s.user_id).filter(Boolean)
       const { data: profilesData = [] } = userIds.length
         ? await supabase.from("profiles").select("id, full_name").in("id", userIds)
         : { data: [] }
 
-      const jobIds = applicationsData.map((a) => a.job_id).filter(Boolean)
+      const jobIds = (applicationsData ?? []).map((a) => a.job_id).filter(Boolean)
       const { data: jobsData = [] } = jobIds.length
         ? await supabase.from("jobs").select("id, title").in("id", jobIds)
         : { data: [] }
 
+      const applications = applicationsData ?? []
+      const students = studentsData ?? []
+      const profiles = profilesData ?? []
+      const jobs = jobsData ?? []
+
       const merged: InterviewRow[] = interviewsData.map((interview) => {
-        const app = applicationsData.find((a) => a.id === interview.application_id)
-        const student = studentsData.find((s) => s.id === app?.student_id)
-        const profile = profilesData.find((p) => p.id === student?.user_id)
-        const job = jobsData.find((j) => j.id === app?.job_id)
+        const app = applications.find((a) => a.id === interview.application_id)
+        const student = students.find((s) => s.id === app?.student_id)
+        const profile = profiles.find((p) => p.id === student?.user_id)
+        const job = jobs.find((j) => j.id === app?.job_id)
 
         return {
           id: interview.id,
@@ -142,7 +147,7 @@ export default function InterviewReports() {
         styles: { fontSize: 11, cellPadding: 3 },
         alternateRowStyles: { fillColor: [240, 240, 240] },
       })
-      yOffset = doc.lastAutoTable.finalY + 15
+      yOffset = (((doc as any).lastAutoTable?.finalY) ?? yOffset) + 15
     })
     doc.save("Selected_Interviews.pdf")
   }
@@ -173,78 +178,70 @@ export default function InterviewReports() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="reports">Interview Reports</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="reports" className="space-y-6">
-          {loading ? (
-            <p>Loading interviews...</p>
-          ) : (
-            <>
-              {[
-                { title: "Upcoming Interviews", data: upcomingInterviews },
-                { title: "Ongoing Interviews", data: ongoingInterviews },
-                { title: "Completed Interviews", data: completedInterviews },
-              ].map((section) => (
-                <Card key={section.title}>
-                  <CardHeader>
-                    <CardTitle>{section.title}</CardTitle>
-                    <CardDescription>
-                      {section.data.length}{" "}
-                      {section.data.length === 1 ? "interview" : "interviews"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {section.data.length === 0 ? (
-                      <p className="text-muted-foreground">No interviews in this section</p>
-                    ) : (
-                      <div className="border rounded-lg">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead></TableHead>
-                              <TableHead>Student</TableHead>
-                              <TableHead>Job</TableHead>
-                              <TableHead>Round</TableHead>
-                              <TableHead>Type</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Result</TableHead>
-                              <TableHead>Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {section.data.map((interview) => (
-                              <TableRow key={interview.id}>
-                                <TableCell>
-                                  <Checkbox
-                                    checked={selectedIds.includes(interview.id)}
-                                    onCheckedChange={() => toggleSelect(interview.id)}
-                                  />
-                                </TableCell>
-                                <TableCell>{interview.student_name}</TableCell>
-                                <TableCell>{interview.job_title}</TableCell>
-                                <TableCell>{interview.interview_round}</TableCell>
-                                <TableCell>{interview.interview_type}</TableCell>
-                                <TableCell>
-                                  {new Date(interview.scheduled_date).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>{interview.result ?? "Pending"}</TableCell>
-                                <TableCell>{getStatusBadge(interview)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
+      {loading ? (
+        <p>Loading interviews...</p>
+      ) : (
+        <>
+          {[
+            { title: "Upcoming Interviews", data: upcomingInterviews },
+            { title: "Ongoing Interviews", data: ongoingInterviews },
+            { title: "Completed Interviews", data: completedInterviews },
+          ].map((section) => (
+            <Card key={section.title}>
+              <CardHeader>
+                <CardTitle>{section.title}</CardTitle>
+                <CardDescription>
+                  {section.data.length}{" "}
+                  {section.data.length === 1 ? "interview" : "interviews"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {section.data.length === 0 ? (
+                  <p className="text-muted-foreground">No interviews in this section</p>
+                ) : (
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead></TableHead>
+                          <TableHead>Student</TableHead>
+                          <TableHead>Job</TableHead>
+                          <TableHead>Round</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Result</TableHead>
+                          <TableHead>Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {section.data.map((interview) => (
+                          <TableRow key={interview.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedIds.includes(interview.id)}
+                                onCheckedChange={() => toggleSelect(interview.id)}
+                              />
+                            </TableCell>
+                            <TableCell>{interview.student_name}</TableCell>
+                            <TableCell>{interview.job_title}</TableCell>
+                            <TableCell>{interview.interview_round}</TableCell>
+                            <TableCell>{interview.interview_type}</TableCell>
+                            <TableCell>
+                              {new Date(interview.scheduled_date).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>{interview.result ?? "Pending"}</TableCell>
+                            <TableCell>{getStatusBadge(interview)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </>
+      )}
     </div>
   )
 }

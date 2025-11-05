@@ -10,7 +10,8 @@ interface Profile {
   email: string
   full_name: string
   role: string
-  is_approved: boolean
+  is_active: boolean
+  approval_status: string
 }
 
 interface Company {
@@ -39,6 +40,7 @@ export default function CompanyDashboard() {
           throw new Error("Failed to fetch dashboard data")
         }
         const data = await response.json()
+        console.log(data)
         setProfile(data.profile)
         setCompany(data.company)
       } catch (err) {
@@ -127,7 +129,7 @@ export default function CompanyDashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Status</p>
-                <p className="font-semibold">{profile?.is_approved ? "Approved" : "Pending"}</p>
+                <p className="font-semibold">{profile?.is_active ? "Approved" : "Pending"}</p>
               </div>
             </CardContent>
           </Card>

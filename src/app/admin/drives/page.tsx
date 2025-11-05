@@ -13,6 +13,7 @@ import { Plus, Edit, CheckSquare2, Square, ChevronDownIcon } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface Company {
   id: string
@@ -279,39 +280,88 @@ export default function DriveManagement() {
       </div>
 
       {/* Drives Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {drives.map(d => (
-          <div key={d.id} className="border rounded-lg p-4 shadow-sm space-y-2 flex flex-col">
-            <div className="flex items-center justify-between">
-              <Checkbox checked={selectedDrives.includes(d.id)} onCheckedChange={() => toggleSelect(d.id)} />
-              <Badge variant={d.is_active ? "default" : "secondary"}>
-                {d.is_active ? "Active" : "Inactive"}
-              </Badge>
-            </div>
-            <h2 className="font-bold text-lg">{d.title}</h2>
-            <p className="text-sm text-gray-600">{d.description}</p>
-            <p><strong>Company:</strong> {d.companies?.company_name || "N/A"}</p>
-            <p><strong>Requirements:</strong> {d.requirements.join(", ")}</p>
-            <p><strong>Skills:</strong> {d.skills_required.join(", ")}</p>
-            <p><strong>Salary:</strong> ₹{d.salary_min} - ₹{d.salary_max}</p>
-            <p><strong>Type:</strong> {d.job_type}</p>
-            <p><strong>Location:</strong> {d.location}</p>
-            <p><strong>Deadline:</strong> {d.application_deadline?.split("T")[0]}</p>
-            <p><strong>Approval:</strong> {getApprovalBadge(d.is_approved)}</p>
-            <div className="flex gap-2 flex-wrap">
-              <Button size="sm" variant="outline" onClick={() => setEditingDrive(d)}>
-                <Edit className="h-4 w-4 mr-1" /> Edit
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => approveRejectDrive(d, true)}>
-                Approve
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => approveRejectDrive(d, false)}>
-                Reject
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {drives.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border p-12 text-center text-muted-foreground">
+          <p className="text-sm">No drives available yet.</p>
+          <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Create your first drive
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {drives.map(d => (
+            <Card key={d.id} className="flex flex-col">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2">
+                    <Checkbox checked={selectedDrives.includes(d.id)} onCheckedChange={() => toggleSelect(d.id)} />
+                    <div>
+                      <CardTitle className="text-base">{d.title}</CardTitle>
+                      <div className="mt-1 flex items-center gap-2">
+                        <Badge variant="secondary">{d.companies?.company_name || "Company N/A"}</Badge>
+                        <Badge variant={d.is_active ? "default" : "secondary"}>{d.is_active ? "Active" : "Inactive"}</Badge>
+                        {getApprovalBadge(d.is_approved)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm text-muted-foreground">
+                <p className="text-foreground/90">{d.description}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="font-medium text-foreground">Salary</span>
+                    <div>₹{d.salary_min} - ₹{d.salary_max}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Type</span>
+                    <div>{d.job_type || "—"}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Location</span>
+                    <div>{d.location || "—"}</div>
+                  </div>
+                  <div>
+                    <span className="font-medium text-foreground">Deadline</span>
+                    <div>{d.application_deadline?.split("T")[0] || "—"}</div>
+                  </div>
+                </div>
+                {!!d.skills_required.length && (
+                  <div>
+                    <span className="font-medium text-foreground">Skills</span>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {d.skills_required.map(s => (
+                        <Badge key={s} variant="outline">{s}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!!d.requirements.length && (
+                  <div>
+                    <span className="font-medium text-foreground">Requirements</span>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      {d.requirements.map(r => (
+                        <Badge key={r} variant="outline">{r}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="mt-auto flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={() => setEditingDrive(d)}>
+                  <Edit className="h-4 w-4 mr-1" /> Edit
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => approveRejectDrive(d, true)}>
+                  Approve
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => approveRejectDrive(d, false)}>
+                  Reject
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
+      )}
 
 
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -373,7 +423,7 @@ export default function DriveManagement() {
                 
             <div>
               <Label htmlFor="date" className="px-1">
-                Date of birth
+                Application Deadline
               </Label>
               <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>

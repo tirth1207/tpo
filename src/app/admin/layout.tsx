@@ -53,12 +53,14 @@ export default async function AdminLayout({
           { title: "Overview", url: "/admin" },
           { title: "Company Approvals", url: "/admin/company-approvals" },
           { title: "Faculty Approvals", url: "/admin/faculty-approvals" },
+          { title: "Faculty - Students List", url: "/admin/faculty-table" },
         ],
       },
       { title: "Analytics", url: "/admin/analytics", icon: "AlignEndHorizontal" },
       { title: "Drives", url: "/admin/drives", icon: "Bot" },
       { title: "Reports", url: "/admin/reports", icon: "PieChart" },
-      { title: "Settings", url: "/admin/settings", icon: "Settings2" },
+      { title: "Applications", url: "/admin/applications", icon: "FileText" },
+      // { title: "Settings", url: "/admin/settings", icon: "Settings2" },
     ],
     navSecondary: [
       {
@@ -74,7 +76,7 @@ export default async function AdminLayout({
     <SidebarProvider>
       <AppSidebar data={sidebarData} />
       <SidebarInset>
-        <div className="rounded-lg bg-background flex flex-col h-full">
+        <div className="rounded-lg bg-background flex flex-col h-full overflow-auto">
           <div className="flex items-center h-16 px-4 border-b">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="h-8 w-8" />
@@ -82,7 +84,7 @@ export default async function AdminLayout({
               <DynamicHeader />
             </div>
           </div>
-          <main className="flex-1 p-6">
+          <main className="flex-1 p-6 overflow-auto">
             {children}
           </main>
         </div>

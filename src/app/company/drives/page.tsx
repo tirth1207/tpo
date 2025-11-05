@@ -184,8 +184,8 @@ export default function DriveManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Drive Management</h2>
-          <p className="text-gray-600">Create and manage your recruitment drives</p>
+          <h2 className="text-2xl font-bold text-foreground">Drive Management</h2>
+          <p className="text-foreground">Create and manage your recruitment drives</p>
         </div>
         <Button onClick={() => {}} className="bg-cyan-600 hover:bg-cyan-700">
           <Plus className="h-4 w-4 mr-2" />
@@ -211,21 +211,21 @@ export default function DriveManagement() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-foreground">
                   <MapPin className="h-4 w-4" /> {drive.location}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-foreground">
                   <Users className="h-4 w-4" /> {drive.application_count || 0} applications
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-sm text-foreground">
                   <Clock className="h-4 w-4" /> Deadline: {drive.application_deadline}
                 </div>
                 <div className="text-sm font-semibold text-green-600">{drive.salary_min}-{drive.salary_max} LPA</div>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-semibold text-gray-900">Requirements:</h4>
-                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <h4 className="font-semibold text-foreground">Requirements:</h4>
+                <ul className="list-disc list-inside text-sm text-foreground space-y-1">
                   {drive.requirements.map((req, i) => <li key={i}>{req}</li>)}
                 </ul>
               </div>

@@ -1,0 +1,16 @@
+{
+  "status": "init",
+  "scope": "codebase",
+  "type": "frontend",
+  "localEndpoint": "http://localhost:3000/",
+  "serverPort": 61702,
+  "executionArgs": {
+    "projectName": "rcti_tpo_management",
+    "projectPath": "C:\\Users\\ratho\\OneDrive\\Desktop\\Dev\\rcti_tpo_management",
+    "testIds": [],
+    "additionalInstruction": "",
+    "envs": {
+      "API_KEY": "sk-user-93kCQW08ohLEVPBNW2p9oL90O3E4tXIQ5whnI5PRaw6jr9zX1t3AJbi9KkD-Tw7doAVNC9GFkLPQH6Jaj-hnziFVsXIUQUw6yTcRwiOEejtm4q9RD7dWxmqBCYJyicy0CDI"
+    }
+  }
+}
