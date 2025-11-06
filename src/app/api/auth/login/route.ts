@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError) {
+      console.log(authError)
       return NextResponse.json({ error: authError.message }, { status: 401 })
     }
 

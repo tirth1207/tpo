@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
-export async function GET(req: NextRequest, context: { params: { studentID: string } }) {
-  const { studentID } = context.params
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ studentID: string }> }
+) {
+  const { studentID } = await context.params // ✅ await the promise
 
   try {
     const supabase = await createClient()
@@ -44,8 +47,12 @@ export async function GET(req: NextRequest, context: { params: { studentID: stri
   }
 }
 
-export async function POST(req: NextRequest, context: { params: { studentID: string } }) {
-  const { studentID } = context.params
+
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ studentID: string }> }
+) {
+  const { studentID } = await context.params // ✅ await here too
 
   try {
     const body = await req.json()
@@ -80,3 +87,4 @@ export async function POST(req: NextRequest, context: { params: { studentID: str
     return NextResponse.json({ error: "Approval failed" }, { status: 500 })
   }
 }
+

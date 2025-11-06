@@ -107,6 +107,8 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
         </Field>
 
         <FieldSeparator>Or continue with</FieldSeparator>
+
+        <p className="bg-background text-muted-foreground relative mx-auto block w-fit px-2 text-sm">Dont have an account? <a href="/auth/signup" className="underline hover:text-gray-900">Create An Account</a></p>
       </FieldGroup>
     </form>
   )
