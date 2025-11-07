@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
           )
         )
       `)
-      .eq('student_id', student.id)
+      .eq('student_id', student?.id)
       .order('applied_at', { ascending: false })
 
     if (applicationsError) {

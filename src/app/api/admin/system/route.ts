@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -28,16 +28,16 @@ export async function GET(request: NextRequest) {
     if (type === 'dashboard') {
       // Get comprehensive dashboard statistics
       const [
-        { count: totalUsers },
-        { count: totalStudents },
-        { count: totalFaculty },
-        { count: totalCompanies },
-        { count: approvedUsers },
-        { count: pendingUsers },
-        { count: totalJobs },
-        { count: activeJobs },
-        { count: totalApplications },
-        { count: selectedApplications }
+        { count: totalUsers = 0 },
+        { count: totalStudents = 0 },
+        { count: totalFaculty = 0 },
+        { count: totalCompanies = 0 },
+        { count: approvedUsers = 0 },
+        { count: pendingUsers = 0 },
+        { count: totalJobs = 0 },
+        { count: activeJobs = 0 },
+        { count: totalApplications = 0 },
+        { count: selectedApplications = 0 }
       ] = await Promise.all([
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
@@ -54,21 +54,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         dashboard: {
           users: {
-            total: totalUsers || 0,
-            students: totalStudents || 0,
-            faculty: totalFaculty || 0,
-            companies: totalCompanies || 0,
-            approved: approvedUsers || 0,
-            pending: pendingUsers || 0
+            total: totalUsers,
+            students: totalStudents,
+            faculty: totalFaculty,
+            companies: totalCompanies,
+            approved: approvedUsers,
+            pending: pendingUsers
           },
           jobs: {
-            total: totalJobs || 0,
-            active: activeJobs || 0
+            total: totalJobs,
+            active: activeJobs
           },
           applications: {
-            total: totalApplications || 0,
-            selected: selectedApplications || 0,
-            placementRate: totalApplications > 0 ? ((selectedApplications || 0) / totalApplications * 100).toFixed(2) : 0
+            total: totalApplications,
+            selected: selectedApplications,
+            placementRate:
+              (totalApplications ?? 0) > 0
+              ? (((selectedApplications ?? 0) / (totalApplications ?? 0)) * 100).toFixed(2)
+              : '0.00'
           }
         }
       })

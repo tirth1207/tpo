@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     const { data: applications } = await supabase
       .from("applications")
       .select("job_id, status")
-      .eq("student_id", student.id);
+      .eq("student_id", student?.id);
 
     const appliedJobIds = applications?.map((app) => app.job_id) || [];
 

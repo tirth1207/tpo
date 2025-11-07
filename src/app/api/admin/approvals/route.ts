@@ -10,7 +10,7 @@ const approvalSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid input data', details: error }, { status: 400 })
     }
     console.error('Approvals error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

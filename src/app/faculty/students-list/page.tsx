@@ -14,12 +14,14 @@ interface Student {
   id: string
   first_name?: string
   last_name?: string
+  name: string
   email?: string
   roll_number?: string
   cgpa?: string
   profile_status?: string
   approval_status?: string
   last_updated?: string
+  status: string
 }
 
 export default function StudentProfilesTable() {
@@ -66,8 +68,8 @@ export default function StudentProfilesTable() {
 
   const filteredStudents = students.filter((student) => {
     const matchesSearch =
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.rollNo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.roll_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email?.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus =
       statusFilter === "all" || student?.approval_status?.toLowerCase() === statusFilter.toLowerCase()
@@ -241,18 +243,18 @@ export default function StudentProfilesTable() {
                         <p className="text-sm text-muted-foreground">{student.email}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="font-mono">{student.rollNo}</TableCell>
+                    <TableCell className="font-mono">{student.roll_number}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{student.cgpa}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {getProfileStatusIcon(student.profileStatus || "")}
-                        <span className="text-sm">{student.profileStatus}</span>
+                        {getProfileStatusIcon(student.profile_status || "")}
+                        <span className="text-sm">{student.profile_status}</span>
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(student.status || "")}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{student.lastUpdated}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{student.last_updated}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button

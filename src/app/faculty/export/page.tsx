@@ -75,14 +75,14 @@ export default function ExportData() {
       alert(`Export completed: ${selectedData.join(", ")} in ${exportFormat.toUpperCase()}`);
     } catch (err) {
       console.error(err);
-      alert("Export failed: " + err.message);
+      alert("Export failed: " + err);
     }
   };
 
   const convertToCSV = (objArray: any[]) => {
     const array = typeof objArray !== "object" ? JSON.parse(objArray) : objArray;
     const headers = Object.keys(array[0] || {});
-    const rows = array.map((row) =>
+    const rows = array.map((row: any) =>
       headers.map((fieldName) => JSON.stringify(row[fieldName] ?? "")).join(",")
     );
     return [headers.join(","), ...rows].join("\r\n");

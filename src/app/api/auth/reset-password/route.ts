@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email } = resetPasswordSchema.parse(body)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${request.headers.get('origin')}/auth/reset-password`,
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid email address', details: error.errors },
+        { error: 'Invalid email address', details: error },
         { status: 400 }
       )
     }
@@ -57,7 +57,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { password, token } = updatePasswordSchema.parse(body)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { error } = await supabase.auth.updateUser({
       password: password,
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input data', details: error.errors },
+        { error: 'Invalid input data', details: error },
         { status: 400 }
       )
     }

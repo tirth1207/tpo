@@ -33,7 +33,7 @@ export function StudentDashboard() {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+      <Sidebar activeSection={activeSection} />
       <main className="flex-1 p-4 lg:p-8 lg:ml-0">
         <div className="max-w-7xl mx-auto">{renderContent()}</div>
       </main>

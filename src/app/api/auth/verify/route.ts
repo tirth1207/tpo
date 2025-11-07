@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { email, token } = verifySchema.parse(body)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verify the email with the token
     const { data, error } = await supabase.auth.verifyOtp({
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input data', details: error.errors },
+        { error: 'Invalid input data', details: error },
         { status: 400 }
       )
     }
@@ -67,7 +67,7 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const { email } = z.object({ email: z.string().email() }).parse(body)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     const { error } = await supabase.auth.resend({
       type: 'signup',
@@ -92,7 +92,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid email address', details: error.errors },
+        { error: 'Invalid email address', details: error },
         { status: 400 }
       )
     }

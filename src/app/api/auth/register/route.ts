@@ -1,19 +1,23 @@
-// app/api/auth/register/route.ts
+// src/app/api/auth/register/route.ts
 
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient, createAdminClient } from "@/lib/supabase/server"
 import { z } from "zod"
+import type { SupabaseClient } from "@supabase/supabase-js"
 
-// Validation schema - MUST match the data sent from the frontend
+// -----------------------------
+// Validation Schema
+// -----------------------------
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
   role: z.enum(["student", "faculty", "company"], {
-    errorMap: () => ({ message: "Invalid role selected" }),
+    message: "Invalid role selected",
   }),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  // Role-specific optional fields - these will be present only if the frontend sends them
+
+  // Role-specific optional fields
   rollNumber: z.string().optional(),
   branch: z.string().optional(),
   year: z.number().optional(),
@@ -25,14 +29,15 @@ const registerSchema = z.object({
   phone: z.string().optional(),
 })
 
-// Helper function to insert role-specific data into Supabase
+// -----------------------------
+// Helper: insert role-specific data
+// -----------------------------
 async function insertRoleSpecificData(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   userId: string,
   validatedData: z.infer<typeof registerSchema>,
 ) {
   if (validatedData.role === "student") {
-    // Validate required fields for students
     if (!validatedData.rollNumber || !validatedData.branch) {
       throw new Error("Roll number and branch are required for students")
     }
@@ -51,8 +56,9 @@ async function insertRoleSpecificData(
     if (studentError) {
       throw new Error(`Student record creation failed: ${studentError.message}`)
     }
-  } else if (validatedData.role === "faculty") {
-    // Validate required fields for faculty
+  }
+
+  if (validatedData.role === "faculty") {
     if (!validatedData.employeeId || !validatedData.department) {
       throw new Error("Employee ID and department are required for faculty")
     }
@@ -67,10 +73,17 @@ async function insertRoleSpecificData(
     if (facultyError) {
       throw new Error(`Faculty record creation failed: ${facultyError.message}`)
     }
-  } else if (validatedData.role === "company") {
-    // Validate required fields for companies
-    if (!validatedData.companyName || !validatedData.industry || !validatedData.contactPerson) {
-      throw new Error("Company name, industry, and contact person are required for companies")
+  }
+
+  if (validatedData.role === "company") {
+    if (
+      !validatedData.companyName ||
+      !validatedData.industry ||
+      !validatedData.contactPerson
+    ) {
+      throw new Error(
+        "Company name, industry, and contact person are required for companies",
+      )
     }
 
     const { error: companyError } = await supabase.from("companies").insert({
@@ -86,15 +99,19 @@ async function insertRoleSpecificData(
   }
 }
 
+// -----------------------------
+// POST /api/auth/register
+// -----------------------------
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const validatedData = registerSchema.parse(body)
 
-    const supabase = createClient()
-    const adminSupabase = createAdminClient()
+    // Initialize clients
+    const supabase = await createClient()
+    const adminSupabase = await createAdminClient()
 
-    // 1. Create user in Supabase Auth - Removed email verification requirement
+    // 1. Create user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: validatedData.email,
       password: validatedData.password,
@@ -105,46 +122,60 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       console.error("Supabase Auth error:", authError.message)
-      return NextResponse.json({ error: "Authentication failed", details: authError.message }, { status: 400 })
+      return NextResponse.json(
+        { error: "Authentication failed", details: authError.message },
+        { status: 400 },
+      )
     }
 
     const user = authData.user
     if (!user) {
-      return NextResponse.json({ error: "User creation failed" }, { status: 400 })
+      return NextResponse.json(
+        { error: "User creation failed" },
+        { status: 400 },
+      )
     }
 
-    // 2. Insert into 'profiles' table using admin client - Set is_approved to true by default
+    // 2. Insert into profiles table
     const { error: profileError } = await adminSupabase.from("profiles").insert({
       id: user.id,
       email: validatedData.email,
       role: validatedData.role,
       first_name: validatedData.firstName,
       last_name: validatedData.lastName,
-      is_approved: true, // Allow users to login immediately without approval
+      is_approved: true, // auto-approve
     })
 
     if (profileError) {
-      console.error(`Profile creation failed for user ${user.id}: ${profileError.message}`)
-      // Cleanup auth user if profile creation fails
+      console.error(
+        `Profile creation failed for user ${user.id}: ${profileError.message}`,
+      )
       await adminSupabase.auth.admin.deleteUser(user.id)
-      return NextResponse.json({ error: "Profile creation failed", details: profileError.message }, { status: 400 })
+      return NextResponse.json(
+        { error: "Profile creation failed", details: profileError.message },
+        { status: 400 },
+      )
     }
 
     // 3. Insert into role-specific tables
     try {
       await insertRoleSpecificData(adminSupabase, user.id, validatedData)
     } catch (roleSpecificError: any) {
-      console.error(`Role-specific record creation failed for user ${user.id}: ${roleSpecificError.message}`)
-      // Cleanup auth user AND profile if role-specific record creation fails
+      console.error(
+        `Role-specific record creation failed for ${user.id}: ${roleSpecificError.message}`,
+      )
       await adminSupabase.auth.admin.deleteUser(user.id)
       await adminSupabase.from("profiles").delete().eq("id", user.id)
       return NextResponse.json(
-        { error: "Failed to create role-specific record", details: roleSpecificError.message },
+        {
+          error: "Failed to create role-specific record",
+          details: roleSpecificError.message,
+        },
         { status: 400 },
       )
     }
 
-    // 4. Create notification for admin about new registration
+    // 4. Notify admin about new registration
     await adminSupabase.from("notifications").insert({
       user_id: user.id,
       title: "New User Registration",
@@ -152,9 +183,9 @@ export async function POST(request: NextRequest) {
       type: "info",
     })
 
-    // Success response - Removed email verification requirement message
+    // 5. Success response
     return NextResponse.json({
-      message: "Registration successful. You can now login.",
+      message: "Registration successful. You can now log in.",
       user: {
         id: user.id,
         email: user.email,
@@ -163,12 +194,19 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
+    // Handle validation errors cleanly
     if (error instanceof z.ZodError) {
-      console.error("Validation error:", error.errors)
-      return NextResponse.json({ error: "Invalid input data", details: error.errors }, { status: 400 })
+      console.error("Validation error:", error.issues)
+      return NextResponse.json(
+        { error: "Invalid input data", details: error.issues },
+        { status: 400 },
+      )
     }
 
     console.error("Registration error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    )
   }
 }

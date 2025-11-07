@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = setupSchema.parse(body)
 
-    const adminSupabase = createAdminClient()
+    const adminSupabase =await createAdminClient()
 
     // Check if admin already exists
     const { data: existingAdmin } = await adminSupabase
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid input data', details: error.errors },
+        { error: 'Invalid input data', details: error },
         { status: 400 }
       )
     }

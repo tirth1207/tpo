@@ -9,7 +9,7 @@ const uploadSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid input data', details: error }, { status: 400 })
     }
 
     console.error('Upload error:', error)
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()

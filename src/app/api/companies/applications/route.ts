@@ -8,12 +8,18 @@ const updateApplicationSchema = z.object({
   notes: z.string().optional(),
 })
 
+// ---------------------------
+// GET: Fetch company applications
+// ---------------------------
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
-    
+    const supabase = await createClient()
+
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -44,10 +50,11 @@ export async function GET(request: NextRequest) {
     const jobId = searchParams.get('job_id')
     const status = searchParams.get('status')
 
-    // Build query
+    // Build query for applications
     let query = supabase
       .from('applications')
-      .select(`
+      .select(
+        `
         *,
         students!inner(
           id,
@@ -81,7 +88,8 @@ export async function GET(request: NextRequest) {
           job_type,
           application_deadline
         )
-      `)
+      `
+      )
       .eq('jobs.company_id', company.id)
 
     if (jobId) {
@@ -92,27 +100,33 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status)
     }
 
-    const { data: applications, error: applicationsError } = await query
-      .order('applied_at', { ascending: false })
+    const { data: applications, error: applicationsError } = await query.order('applied_at', {
+      ascending: false,
+    })
 
     if (applicationsError) {
       return NextResponse.json({ error: 'Failed to fetch applications' }, { status: 400 })
     }
 
     return NextResponse.json({ applications })
-
   } catch (error) {
     console.error('Get company applications error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
+// ---------------------------
+// PUT: Update application status
+// ---------------------------
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createClient()
-    
+    const supabase = await createClient()
+
     // Get current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -145,7 +159,8 @@ export async function PUT(request: NextRequest) {
     // Verify application belongs to company's job
     const { data: application, error: appError } = await supabase
       .from('applications')
-      .select(`
+      .select(
+        `
         id,
         student_id,
         jobs!inner(
@@ -153,7 +168,8 @@ export async function PUT(request: NextRequest) {
           company_id,
           title
         )
-      `)
+      `
+      )
       .eq('id', applicationId)
       .eq('jobs.company_id', company.id)
       .single()
@@ -162,6 +178,9 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Application not found' }, { status: 404 })
     }
 
+    // Flatten possible array relation for safety
+    const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs
+
     // Update application
     const { error: updateError } = await supabase
       .from('applications')
@@ -169,7 +188,7 @@ export async function PUT(request: NextRequest) {
         status,
         notes,
         reviewed_at: new Date().toISOString(),
-        reviewed_by: user.id
+        reviewed_by: user.id,
       })
       .eq('id', applicationId)
 
@@ -178,28 +197,28 @@ export async function PUT(request: NextRequest) {
     }
 
     // Create notification for student
-    await supabase
-      .from('notifications')
-      .insert({
-        user_id: application.student_id,
-        title: 'Application Status Updated',
-        message: `Your application for ${application.jobs.title} has been ${status.replace('_', ' ')}.`,
-        type: status === 'selected' ? 'success' : status === 'rejected' ? 'error' : 'info',
-      })
+    await supabase.from('notifications').insert({
+      user_id: application.student_id,
+      title: 'Application Status Updated',
+      message: `Your application for ${job?.title ?? 'the job'} has been ${status.replace(
+        '_',
+        ' '
+      )}.`,
+      type:
+        status === 'selected'
+          ? 'success'
+          : status === 'rejected'
+          ? 'error'
+          : 'info',
+    })
 
     return NextResponse.json({ message: 'Application updated successfully' })
-
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid input data', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid input data', details: error.issues }, { status: 400 })
     }
 
     console.error('Update application error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
-
-
-
-
-

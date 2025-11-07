@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -34,30 +34,46 @@ export async function GET(request: NextRequest) {
         { count: totalApplications },
         { count: selectedApplications },
         { count: totalJobs },
-        { count: totalCompanies }
+        { count: totalCompanies },
       ] = await Promise.all([
         supabase.from('students').select('id', { count: 'exact', head: true }),
-        supabase.from('students').select('id', { count: 'exact', head: true }).eq('profiles.is_approved', true),
-        supabase.from('students').select('id', { count: 'exact', head: true }).eq('profiles.is_approved', false),
+        supabase
+          .from('students')
+          .select('id', { count: 'exact', head: true })
+          .eq('profiles.is_approved', true),
+        supabase
+          .from('students')
+          .select('id', { count: 'exact', head: true })
+          .eq('profiles.is_approved', false),
         supabase.from('applications').select('id', { count: 'exact', head: true }),
-        supabase.from('applications').select('id', { count: 'exact', head: true }).eq('status', 'selected'),
+        supabase
+          .from('applications')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'selected'),
         supabase.from('jobs').select('id', { count: 'exact', head: true }),
-        supabase.from('companies').select('id', { count: 'exact', head: true })
+        supabase.from('companies').select('id', { count: 'exact', head: true }),
       ])
+
+      const safeTotalApplications = totalApplications ?? 0
+      const safeSelectedApplications = selectedApplications ?? 0
 
       return NextResponse.json({
         overview: {
-          totalStudents: totalStudents || 0,
-          approvedStudents: approvedStudents || 0,
-          pendingStudents: pendingStudents || 0,
-          totalApplications: totalApplications || 0,
-          selectedApplications: selectedApplications || 0,
-          totalJobs: totalJobs || 0,
-          totalCompanies: totalCompanies || 0,
-          placementRate: totalApplications > 0 ? ((selectedApplications || 0) / totalApplications * 100).toFixed(2) : 0
-        }
+          totalStudents: totalStudents ?? 0,
+          approvedStudents: approvedStudents ?? 0,
+          pendingStudents: pendingStudents ?? 0,
+          totalApplications: safeTotalApplications,
+          selectedApplications: safeSelectedApplications,
+          totalJobs: totalJobs ?? 0,
+          totalCompanies: totalCompanies ?? 0,
+          placementRate:
+            safeTotalApplications > 0
+              ? ((safeSelectedApplications / safeTotalApplications) * 100).toFixed(2)
+              : '0.00',
+        },
       })
     }
+
 
     if (type === 'branch-stats') {
       // Get branch-wise statistics

@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Bell, FileText, Briefcase, Award, User, AlertCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
+import type { LucideIcon } from "lucide-react"
 
 interface DashboardStats {
   applications: number
@@ -327,15 +328,15 @@ function DashboardContent() {
 
     {/* ✅ Quick Stats — safe fallback */}
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-      {[
+      {([
         ["Applications", dashboardData?.stats?.applications, Briefcase],
         ["Interviews", dashboardData?.stats?.interviews, User],
         ["Offers", dashboardData?.stats?.offers, Award],
-      ].map(([label, value, Icon], i) => (
+      ] as [string, number | undefined, LucideIcon][]).map(([label, value, Icon], i) => (
         <Card key={i}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{label}</CardTitle>
-            {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+            <Icon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{value ?? 0}</div>
@@ -343,7 +344,6 @@ function DashboardContent() {
           </CardContent>
         </Card>
       ))}
-
     </div>
 
     {/* ✅ Recent Apps Section retained */}
