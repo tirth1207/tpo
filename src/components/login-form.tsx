@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { redirect, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Field, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -54,7 +54,10 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
         case "company":
           redirectPath = "/company"
           break
-      }
+        case "manager":
+          redirectPath = "/manager"
+          break
+        }
 
       router.push(redirectPath)
     } catch (err: any) {
