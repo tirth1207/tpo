@@ -4,11 +4,25 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import type { User } from "@/lib/supabase/types"
+import HistorySection from "@/components/admin/HistorySection"
+
+interface ApprovalHistoryItem {
+  id: string
+  name: string
+  email: string
+  role: string
+  status: string | null
+  approved_at: string | null
+  approved_by: { id: string; full_name?: string; email?: string } | null
+}
 
 export default function CompanyApprovals() {
   const [companies, setCompanies] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+  const [history, setHistory] = useState<ApprovalHistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -57,15 +71,60 @@ export default function CompanyApprovals() {
     }
   }
 
+  const fetchHistory = async () => {
+    try {
+      setHistoryLoading(true)
+      const res = await fetch('/api/admin/approvals/history?role=company')
+      if (!res.ok) throw new Error('Failed to fetch approval history')
+      const data = await res.json()
+      setHistory(data.approvals || [])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Company Approvals</CardTitle>
-        <CardDescription>Pending company registrations</CardDescription>
+        <div className="flex items-center gap-4">
+          <CardDescription>Pending company registrations</CardDescription>
+          <Button size="sm" variant={showHistory ? 'outline' : 'ghost'} onClick={() => {
+            setShowHistory((s) => !s)
+            if (!showHistory) fetchHistory()
+          }}>
+            {showHistory ? 'Hide History' : 'View Approval History'}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
+        {showHistory ? (
+          historyLoading ? (
+            <div className="text-center py-4">Loading history...</div>
+          ) : history.length === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">No approval history</div>
+          ) : (
+            <div className="space-y-3">
+              {history.map((h) => (
+                <div key={h.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <p className="font-medium">{h.name}</p>
+                    <p className="text-sm text-muted-foreground">{h.email}</p>
+                    <p className="text-xs text-muted-foreground">Status: {h.status || 'approved'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm">{h.approved_at ? new Date(h.approved_at).toLocaleString() : '-'}</p>
+                    <p className="text-xs text-muted-foreground">By: {h.approved_by?.full_name || h.approved_by?.email || '-'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : loading ? (
           <div className="text-center py-4">Loading...</div>
         ) : error ? (
           <div className="text-center py-4 text-red-500">{error}</div>
@@ -93,5 +152,7 @@ export default function CompanyApprovals() {
         )}
       </CardContent>
     </Card>
+    <HistorySection target_table="profiles" target_role="company" title="Company: All Operations History" />
+    </>
   )
 }

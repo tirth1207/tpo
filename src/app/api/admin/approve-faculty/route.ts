@@ -50,6 +50,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Faculty already approved' }, { status: 400 })
     }
 
+    // Mark session for audit so the trigger records actor
+    await supabase.rpc('set_audit_session', { p_actor_id: user.id, p_actor_role: 'admin', p_skip: false })
+
     // Update approval
     const { error: updateError } = await supabase
       .from('profiles')

@@ -9,6 +9,7 @@ import  AdminSettings  from "./settings/page"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import CompanyApprovals from "./company-approvals/page"
 import FacultyApprovals from "./faculty-approvals/page"
+import HistorySection from "@/components/admin/HistorySection"
 
 interface Analytics {
   total_profiles: number
@@ -127,6 +128,7 @@ export default function AdminDashboard() {
               <AdminSettings />
             </TabsContent>
           </Tabs>
+          <HistorySection title="System: Recent Audit Events" limit={20} />
         </div>
       </main>
     </div>

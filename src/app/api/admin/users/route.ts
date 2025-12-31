@@ -106,6 +106,9 @@ export async function PUT(request: NextRequest) {
     }
 
     if (action === 'delete') {
+      // Mark session for audit so the trigger records actor
+      await supabase.rpc('set_audit_session', { p_actor_id: user.id, p_actor_role: 'admin', p_skip: false })
+
       // Delete user (this will cascade to related tables)
       const { error: deleteError } = await supabase
         .from('profiles')
@@ -121,6 +124,9 @@ export async function PUT(request: NextRequest) {
 
     // Handle approve/reject
     const isApproved = action === 'approve'
+
+    // Mark session for audit so the trigger records actor
+    await supabase.rpc('set_audit_session', { p_actor_id: user.id, p_actor_role: 'admin', p_skip: false })
     
     const { error: updateError } = await supabase
       .from('profiles')

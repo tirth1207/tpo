@@ -114,3 +114,243 @@ INSERT INTO public.analytics (user_id, action, metadata, created_at) VALUES
 INSERT INTO public.admin_logs (admin_id, action, target_table, target_id, old_values, new_values, created_at) VALUES
 ('00000000-0000-0000-0000-000000000001', 'approved_faculty', 'faculty', (SELECT id FROM public.faculty WHERE employee_id='FAC002'), NULL, '{"is_approved":true}', NOW()),
 ('00000000-0000-0000-0000-000000000001', 'approved_company', 'companies', (SELECT id FROM public.companies WHERE company_name='DataTech Analytics'), NULL, '{"is_approved":true}', NOW());
+
+-- =============================================
+-- AUDIT EVENTS (creation, approval, rejection, deletion)
+-- =============================================
+CREATE TABLE IF NOT EXISTS public.audit_events (
+	id uuid NOT NULL DEFAULT extensions.uuid_generate_v4(),
+	actor_id uuid NULL,
+	actor_role text NULL,
+	action text NOT NULL,
+	target_table text NOT NULL,
+	target_id uuid NULL,
+	target_role text NULL,
+	details jsonb NULL,
+	created_at timestamp with time zone NULL DEFAULT CURRENT_TIMESTAMP,
+	CONSTRAINT audit_events_pkey PRIMARY KEY (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_target ON public.audit_events USING btree (target_table, target_id);
+CREATE INDEX IF NOT EXISTS idx_audit_created_at ON public.audit_events USING btree (created_at DESC);
+
+-- Sample audit events
+INSERT INTO public.audit_events (actor_id, actor_role, action, target_table, target_id, target_role, details, created_at) VALUES
+('00000000-0000-0000-0000-000000000001', 'admin', 'approved', 'profiles', '00000000-0000-0000-0000-000000000010', 'faculty', '{"notes":"Approved during initial setup"}', NOW() - INTERVAL '29 days'),
+('00000000-0000-0000-0000-000000000001', 'admin', 'approved', 'profiles', '00000000-0000-0000-0000-000000000011', 'faculty', '{"notes":"Approved during initial setup"}', NOW() - INTERVAL '24 days');
+
+-- =============================================
+-- AUDIT TRIGGERS: automatic insertion on INSERT/UPDATE/DELETE
+-- =============================================
+-- Function to insert an audit event for key table operations
+CREATE OR REPLACE FUNCTION public.fn_audit_events_trigger()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	v_action text;
+	v_target_id uuid;
+	v_target_role text;
+	v_actor_id uuid;
+	v_actor_role text;
+	v_skip text;
+	v_actor_setting text;
+	v_role_setting text;
+BEGIN
+	-- Read session settings set via set_audit_session RPC (if any). Use current_setting with missing_ok = true.
+	v_actor_setting := current_setting('audit.actor_id', true);
+	v_role_setting := current_setting('audit.actor_role', true);
+	v_skip := current_setting('audit.skip', true);
+	IF v_actor_setting IS NOT NULL AND v_actor_setting <> '' THEN
+		v_actor_id := v_actor_setting::uuid;
+	ELSE
+		v_actor_id := NULL;
+	END IF;
+	v_actor_role := CASE WHEN v_role_setting IS NOT NULL AND v_role_setting <> '' THEN v_role_setting ELSE NULL END;
+	-- If audit.skip = '1' then skip inserting by trigger (app may insert its own event)
+	IF v_skip = '1' THEN
+		RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+	END IF;
+	IF (TG_OP = 'INSERT') THEN
+		v_action := 'created';
+		-- Safely extract potential target ids using JSON access to avoid referencing missing columns
+		v_target_id := (
+			CASE
+				WHEN (row_to_json(NEW)->>'id') IS NOT NULL THEN (row_to_json(NEW)->>'id')::uuid
+				WHEN (row_to_json(NEW)->>'profile_id') IS NOT NULL THEN (row_to_json(NEW)->>'profile_id')::uuid
+				WHEN (row_to_json(NEW)->>'user_id') IS NOT NULL THEN (row_to_json(NEW)->>'user_id')::uuid
+				ELSE NULL
+			END
+		);
+		v_target_role := (CASE WHEN TG_TABLE_NAME = 'profiles' THEN (row_to_json(NEW)->>'role') ELSE NULL END);
+
+		INSERT INTO public.audit_events (actor_id, actor_role, action, target_table, target_id, target_role, details)
+		VALUES (v_actor_id, v_actor_role, v_action, TG_TABLE_NAME, v_target_id, v_target_role, row_to_json(NEW)::jsonb);
+
+		RETURN NEW;
+
+	ELSIF (TG_OP = 'DELETE') THEN
+		v_action := 'deleted';
+		v_target_id := (
+			CASE
+				WHEN (row_to_json(OLD)->>'id') IS NOT NULL THEN (row_to_json(OLD)->>'id')::uuid
+				WHEN (row_to_json(OLD)->>'profile_id') IS NOT NULL THEN (row_to_json(OLD)->>'profile_id')::uuid
+				WHEN (row_to_json(OLD)->>'user_id') IS NOT NULL THEN (row_to_json(OLD)->>'user_id')::uuid
+				ELSE NULL
+			END
+		);
+		v_target_role := (CASE WHEN TG_TABLE_NAME = 'profiles' THEN (row_to_json(OLD)->>'role') ELSE NULL END);
+
+		INSERT INTO public.audit_events (actor_id, actor_role, action, target_table, target_id, target_role, details)
+		VALUES (v_actor_id, v_actor_role, v_action, TG_TABLE_NAME, v_target_id, v_target_role, row_to_json(OLD)::jsonb);
+
+		RETURN OLD;
+
+	ELSIF (TG_OP = 'UPDATE') THEN
+		-- Special-case: profile approval status changes -> record approved/rejected with approver
+		IF TG_TABLE_NAME = 'profiles' THEN
+			IF (row_to_json(OLD)->>'approval_status') IS DISTINCT FROM (row_to_json(NEW)->>'approval_status') THEN
+				v_action := (row_to_json(NEW)->>'approval_status');
+				v_target_id := NEW.id;
+				v_target_role := (row_to_json(NEW)->>'role');
+
+				INSERT INTO public.audit_events (actor_id, actor_role, action, target_table, target_id, target_role, details)
+				VALUES (
+					CASE WHEN (row_to_json(NEW)->>'approved_by') IS NOT NULL THEN (row_to_json(NEW)->>'approved_by')::uuid ELSE NULL END,
+					NULL,
+					v_action, TG_TABLE_NAME, v_target_id, v_target_role, jsonb_build_object('old', row_to_json(OLD), 'new', row_to_json(NEW))
+				);
+
+				RETURN NEW;
+			END IF;
+		END IF;
+
+		-- Generic update event
+		v_action := 'updated';
+		v_target_id := (
+			CASE
+				WHEN (row_to_json(NEW)->>'id') IS NOT NULL THEN (row_to_json(NEW)->>'id')::uuid
+				WHEN (row_to_json(NEW)->>'profile_id') IS NOT NULL THEN (row_to_json(NEW)->>'profile_id')::uuid
+				WHEN (row_to_json(NEW)->>'user_id') IS NOT NULL THEN (row_to_json(NEW)->>'user_id')::uuid
+				ELSE NULL
+			END
+		);
+		v_target_role := (CASE WHEN TG_TABLE_NAME = 'profiles' THEN (row_to_json(NEW)->>'role') ELSE NULL END);
+
+		INSERT INTO public.audit_events (actor_id, actor_role, action, target_table, target_id, target_role, details)
+		VALUES (v_actor_id, v_actor_role, v_action, TG_TABLE_NAME, v_target_id, v_target_role, jsonb_build_object('old', row_to_json(OLD), 'new', row_to_json(NEW)));
+
+		RETURN NEW;
+	END IF;
+
+	RETURN NULL;
+END;
+$$;
+
+-- Attach triggers to tables we care about (idempotent loop)
+DO $$
+DECLARE
+	_tbl text;
+	_tables text[] := ARRAY[
+		'profiles',
+		'students',
+		'faculty',
+		'faculty_student_ranges',
+		'companies',
+		'jobs',
+		'applications',
+		'interviews',
+		'offer_letters',
+		'notifications',
+		'analytics'
+	];
+BEGIN
+	FOREACH _tbl IN ARRAY _tables LOOP
+		-- Skip audit_events to avoid recursion
+		IF _tbl <> 'audit_events' THEN
+			IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = format('audit_%s_trg', _tbl)) THEN
+				EXECUTE format('CREATE TRIGGER audit_%s_trg AFTER INSERT OR UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.fn_audit_events_trigger()', _tbl, _tbl);
+			END IF;
+		END IF;
+	END LOOP;
+END$$;
+
+-- Helper to set audit session variables so triggers can record the actor
+CREATE OR REPLACE FUNCTION public.set_audit_session(p_actor_id uuid, p_actor_role text, p_skip boolean DEFAULT false)
+RETURNS boolean
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	-- Use set_config with is_local = true so it only affects the current transaction
+	PERFORM set_config('audit.actor_id', COALESCE(p_actor_id::text, ''), true);
+	PERFORM set_config('audit.actor_role', COALESCE(p_actor_role, ''), true);
+	PERFORM set_config('audit.skip', CASE WHEN p_skip THEN '1' ELSE '0' END, true);
+	RETURN true;
+END;
+$$;
+
+-- Set audit session and update job approval in a single transaction
+CREATE OR REPLACE FUNCTION public.jobs_set_approval(
+  p_job_id uuid,
+  p_status text,
+  p_actor_id uuid,
+  p_actor_role text
+) RETURNS boolean
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  _is_boolean boolean := false;
+BEGIN
+  -- Validate allowed statuses
+  IF p_status IS NULL OR p_status NOT IN ('approved','rejected','pending') THEN
+    RAISE EXCEPTION 'Invalid status for is_approved: %', p_status;
+  END IF;
+
+  -- Determine whether the column type is boolean (for backwards compatibility)
+  PERFORM 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='jobs' AND column_name='is_approved' AND data_type = 'boolean';
+  IF FOUND THEN
+    _is_boolean := true;
+  END IF;
+
+  -- Set transaction-local audit settings for the triggers
+  PERFORM set_audit_session(p_actor_id, p_actor_role, false);
+
+  -- Update the job (trigger will record actor info). Also update timestamp.
+  IF _is_boolean THEN
+    UPDATE public.jobs
+      SET is_approved = (CASE WHEN p_status = 'approved' THEN true WHEN p_status = 'rejected' THEN false ELSE NULL END),
+          updated_at = NOW()
+      WHERE id = p_job_id;
+  ELSE
+    UPDATE public.jobs
+      SET is_approved = p_status,
+          updated_at = NOW()
+      WHERE id = p_job_id;
+  END IF;
+
+  RETURN FOUND; -- true if a row was updated
+END;
+$$;
+
+-- Set audit session and update job approval in a single transaction (boolean variant)
+CREATE OR REPLACE FUNCTION public.jobs_set_approval_bool(
+  p_job_id uuid,
+  p_is_approved boolean,
+  p_actor_id uuid,
+  p_actor_role text
+) RETURNS boolean
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Set transaction-local audit settings for the triggers
+  PERFORM set_audit_session(p_actor_id, p_actor_role, false);
+
+  UPDATE public.jobs
+    SET is_approved = p_is_approved,
+        updated_at = NOW()
+    WHERE id = p_job_id;
+
+  RETURN FOUND;
+END;
+$$;
+

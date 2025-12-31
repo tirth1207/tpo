@@ -9,9 +9,12 @@ import { Field, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/f
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
+import { supabase } from "@/lib/supabase/supabaseClient"
+import { useAuth } from "@/lib/supabase/useSupabaseAuth"
 
 export default function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
   const router = useRouter()
+  const { refreshUser } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -36,6 +39,16 @@ export default function LoginForm({ className, ...props }: React.ComponentProps<
       if (!response.ok) {
         setError(data.error || "Login failed")
         return
+      }
+
+      // Persist the session on the client so the auth context picks it up
+      try {
+        if (data.session) {
+          await supabase.auth.setSession(data.session)
+          await refreshUser()
+        }
+      } catch (err) {
+        console.error("Failed to set client session:", err)
       }
 
       // Successful login - redirect based on role

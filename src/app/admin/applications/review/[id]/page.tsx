@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { SquareArrowOutUpRight, ArrowLeft } from "lucide-react"
+import HistorySection from "@/components/admin/HistorySection"
  
 
 interface ApplicationDetail {
@@ -367,6 +368,7 @@ export default function ReviewApplicationPage() {
                 <Button variant="outline" onClick={() => router.push("/admin/applications")}>Back to Applications</Button>
               </CardContent>
             </Card>
+              <HistorySection target_table="applications" target_id={id} title="This Application: History" />
           </div>
         </div>
       )}

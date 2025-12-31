@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import HistorySection from "@/components/admin/HistorySection"
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Faculty {
   id: string;
@@ -18,6 +20,7 @@ interface FacultyRange {
   start_roll_number: string;
   end_roll_number: string;
   faculty?: Faculty;
+  profiles: { full_name: string; email: string };
 }
 
 export default function FacultyRangesPage() {
@@ -37,6 +40,8 @@ export default function FacultyRangesPage() {
       if (res.ok) {
         setFaculties(data.faculties || []);
         setRanges(data.ranges || []);
+        console.log(data);
+
       } else {
         alert(data.error || "Failed to fetch data");
       }
@@ -135,6 +140,7 @@ export default function FacultyRangesPage() {
               <TableHead>Department</TableHead>
               <TableHead>Start Roll</TableHead>
               <TableHead>End Roll</TableHead>
+              <TableHead>Updated By</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -146,6 +152,16 @@ export default function FacultyRangesPage() {
                 <TableCell>{r.start_roll_number}</TableCell>
                 <TableCell>{r.end_roll_number}</TableCell>
                 <TableCell>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      {r.profiles?.full_name}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{r.profiles?.email}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TableCell>
+                <TableCell>
                   <Button variant="destructive" size="sm" onClick={() => deleteRange(r.id)}>
                     Delete
                   </Button>
@@ -155,6 +171,7 @@ export default function FacultyRangesPage() {
           </TableBody>
         </Table>
       )}
+      <HistorySection target_table="faculty_student_ranges" title="Faculty Ranges History" />
     </div>
   );
 }

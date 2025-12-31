@@ -11,6 +11,7 @@ import autoTable from "jspdf-autotable"
 import { Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import HistorySection from "@/components/admin/HistorySection"
 
 interface InterviewRow {
   id: string
@@ -166,6 +167,7 @@ export default function InterviewReports() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Interview Reports</h1>
+      <HistorySection target_table="interviews" title="Interview History" />
           <p className="text-muted-foreground mt-1">Overview of all interview drives</p>
         </div>
         <div className="flex gap-2">

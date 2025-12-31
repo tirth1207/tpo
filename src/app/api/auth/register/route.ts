@@ -137,6 +137,13 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Insert into profiles table
+    // Set audit session so the trigger records creation with actor=user
+    try {
+      await adminSupabase.rpc('set_audit_session', { p_actor_id: user.id, p_actor_role: validatedData.role, p_skip: false })
+    } catch (err) {
+      console.error('Failed to set audit session before profile insert:', err)
+    }
+
     const { error: profileError } = await adminSupabase.from("profiles").insert({
       id: user.id,
       email: validatedData.email,
@@ -182,6 +189,13 @@ export async function POST(request: NextRequest) {
       message: `New ${validatedData.role} registered: ${validatedData.firstName} ${validatedData.lastName} (${validatedData.email})`,
       type: "info",
     })
+
+    // 5. Set audit session so the trigger records the creation with actor = new user
+    try {
+      await adminSupabase.rpc('set_audit_session', { p_actor_id: user.id, p_actor_role: validatedData.role, p_skip: false })
+    } catch (err) {
+      console.error('Failed to set audit session for registration:', err)
+    }
 
     // 5. Success response
     return NextResponse.json({

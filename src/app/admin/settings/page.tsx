@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Settings, Mail, Bell, Shield } from "lucide-react"
+import HistorySection from "@/components/admin/HistorySection"
 
 export default function AdminSettings() {
   return (
@@ -279,6 +280,7 @@ Email: tpo@college.edu"
               <Button>Update Security Settings</Button>
             </CardContent>
           </Card>
+          <HistorySection title="Settings Changes History" limit={20} />
         </TabsContent>
       </Tabs>
     </div>

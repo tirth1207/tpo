@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import HistorySection from "@/components/admin/HistorySection"
 
 interface Company {
   id: string
@@ -60,6 +61,7 @@ export default function DriveManagement() {
     application_deadline: "",
     company_id: "",
   })
+  const [historyDriveId, setHistoryDriveId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDrives()
@@ -99,31 +101,37 @@ export default function DriveManagement() {
 
   const bulkApproveReject = async (approve: boolean) => {
     if (!selectedDrives.length) return
-    const { error } = await supabase
-      .from("jobs")
-      .update({ is_approved: approve ? "approved" : "rejected" })
-      .in("id", selectedDrives)
-    if (error) {
-      console.error(error)
-      alert("Bulk update failed")
-    } else {
+    try {
+      const res = await fetch('/api/manager/drives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: null, is_approved: approve ? 'approved' : 'rejected', ids: selectedDrives }),
+      })
+      const payload = await res.json()
+      if (!res.ok) throw payload
       setSelectedDrives([])
       fetchDrives()
       alert(`Bulk ${approve ? "Approved" : "Rejected"}!`)
+    } catch (err) {
+      console.error(err)
+      alert('Bulk update failed')
     }
   }
 
   const approveRejectDrive = async (drive: Drive, approve: boolean) => {
-    const { error } = await supabase
-      .from("jobs")
-      .update({ is_approved: approve ? "approved" : "rejected" })
-      .eq("id", drive.id)
-    if (error) {
-      console.error(error)
-      alert("Update failed")
-    } else {
+    try {
+      const res = await fetch('/api/manager/drives', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: drive.id, is_approved: approve ? 'approved' : 'rejected' }),
+      })
+      const payload = await res.json()
+      if (!res.ok) throw payload
       fetchDrives()
       alert(`${approve ? "Approved" : "Rejected"}!`)
+    } catch (err) {
+      console.error(err)
+      alert('Update failed')
     }
   }
 
@@ -243,6 +251,7 @@ export default function DriveManagement() {
   }
 
   return (
+    <>
     <div className="p-8 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Drive Management</h1>
@@ -356,6 +365,9 @@ export default function DriveManagement() {
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => approveRejectDrive(d, false)}>
                   Reject
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setHistoryDriveId(d.id)}>
+                  History
                 </Button>
               </CardFooter>
             </Card>
@@ -523,6 +535,25 @@ export default function DriveManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!historyDriveId} onOpenChange={(open) => { if (!open) setHistoryDriveId(null) }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Drive History</DialogTitle>
+          </DialogHeader>
+          {historyDriveId && (
+            <div>
+              <HistorySection target_table="jobs" target_id={historyDriveId} title="Drive History" limit={50} />
+            </div>
+          )}
+          <DialogFooter className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setHistoryDriveId(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
+    <HistorySection target_table="jobs" title="Drives History" limit={50} />
+    </>
   )
 }

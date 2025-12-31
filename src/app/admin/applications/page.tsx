@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { SquareArrowOutUpRight } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 // import { Application } from '@/lib/supabase/types'
+import HistorySection from '@/components/admin/HistorySection'
 
 interface Application {
     id: string
@@ -108,8 +109,11 @@ function Applications() {
                 ))}
             </TableBody>
         </Table>
+    <HistorySection target_table="applications" title="Applications History" />
     </div>
   )
 }
 
 export default Applications
+ 
+// add history section export for page

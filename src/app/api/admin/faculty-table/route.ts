@@ -16,7 +16,7 @@ export async function GET() {
     // Fetch ranges
     const { data: ranges, error: rangesError } = await supabase
       .from("faculty_student_ranges")
-      .select(`id, faculty_id, start_roll_number, end_roll_number, faculty:faculty_id(id, department, profiles:user_id(id, full_name))`)
+      .select(`id, faculty_id, start_roll_number, end_roll_number, updated_by, profiles:updated_by(id, full_name, email), faculty:faculty_id(id, department, profiles:user_id(id, full_name))`)
       .order("start_roll_number", { ascending: true });
 
     if (rangesError) throw rangesError;

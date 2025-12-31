@@ -2,11 +2,11 @@
 
 import { usePathname } from "next/navigation"
 
-export default function DynamicHeader() {
+export default function DynamicHeader(pathName: string) {
   const pathname = usePathname()
 
   const pageTitle =
-    pathname === "/admin" ? "Dashboard"
+    pathname === "/admin" || pathName ? "Dashboard"
     : pathname.includes("analytics") ? "Analytics"
     : pathname.includes("drives") ? "Drives"
     : pathname.includes("reports") ? "Reports"

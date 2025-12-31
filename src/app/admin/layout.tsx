@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import DynamicHeader from "@/components/DynamicHeader"
+import AdminHistoryWidget from "@/components/admin/AdminHistoryWidget"
 
 export default async function AdminLayout({
   children,
@@ -81,7 +82,8 @@ export default async function AdminLayout({
             <div className="flex items-center gap-3">
               <SidebarTrigger className="h-8 w-8" />
               <Separator orientation="vertical" className="h-6" />
-              <DynamicHeader />
+                <DynamicHeader />
+                <AdminHistoryWidget />
             </div>
           </div>
           <main className="flex-1 p-6 overflow-auto">

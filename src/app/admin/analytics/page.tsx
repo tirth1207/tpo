@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import HistorySection from "@/components/admin/HistorySection"
 
 interface AnalyticsRow {
   id: string
@@ -170,6 +171,7 @@ export default function AdminAnalytics() {
           </div>
         </CardContent>
       </Card>
+      <HistorySection target_table="analytics" title="Analytics Changes History" limit={20} />
     </div>
   )
 }
